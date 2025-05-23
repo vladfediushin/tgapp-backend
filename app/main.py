@@ -6,6 +6,10 @@ from app.routers import questions, answers, stats
 
 app = FastAPI()
 
+origins = [
+    "https://tgapp-frontend.vercel.app"
+]
+
 # разрешим CORS для локального фронта
 app.add_middleware(
     CORSMiddleware,
