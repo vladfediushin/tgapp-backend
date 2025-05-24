@@ -10,7 +10,6 @@ origins = [
     "https://tgapp-frontend.vercel.app"
 ]
 
-# разрешим CORS для локального фронта
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
