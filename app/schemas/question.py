@@ -1,10 +1,14 @@
-# backend/app/schemas/question.py
+# app/schemas/question.py
 from pydantic import BaseModel
+from typing import Any
 
-class Question(BaseModel):
+
+class QuestionOut(BaseModel):
     id: int
-    text: str
-    image_url: str
-    options: list[str]
-    correct_index: int
+    data: Any
     topic: str
+    country: str
+    language: str
+
+    class Config:
+        orm_mode = True
