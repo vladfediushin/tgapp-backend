@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import joinedload
 from app.models.user_progress import UserProgress
-from app.models.questions import Question
+from app.models.question import Question
 from app.schemas.user_progress import UserProgressCreate
 
 # Предвычисленная последовательность Фибоначчи на 20 уровней (до ~18 лет)
