@@ -1,3 +1,4 @@
+# Файл: app/crud/user_progress.py
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from uuid import UUID
@@ -50,6 +51,7 @@ async def create_or_update_progress(
     now = datetime.utcnow()
 
     if prog:
+        # Обновление существующей записи
         if data.is_correct:
             prog.repetition_count += 1
         else:
@@ -58,6 +60,7 @@ async def create_or_update_progress(
         prog.last_answered_at = now
         prog.next_due_at = calculate_next_due_date(prog.repetition_count)
     else:
+        # Создание новой записи
         reps = 1
         next_due = calculate_next_due_date(reps)
         prog = UserProgress(

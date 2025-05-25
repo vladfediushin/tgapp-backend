@@ -23,8 +23,6 @@ class UserProgressOut(BaseModel):
     is_correct: Optional[bool]
     last_answered_at: Optional[datetime]
     next_due_at: Optional[datetime]
-    country: str
-    language: str
 
     class Config:
         orm_mode = True
