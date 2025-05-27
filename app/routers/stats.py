@@ -1,9 +1,18 @@
 # backend/app/routers/stats.py
-from fastapi import APIRouter, Query
-from app.schemas.stats import UserStats
-from app.routers.answers import answers_log
 
-router = APIRouter()
+# оставить на потом
+
+
+from fastapi import APIRouter, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+from app.database import get_db
+from app.models.user_progress import UserProgress
+from app.models.user import User
+from pydantic import BaseModel
+
+
+router = APIRouter(tags=["Statistics"])
 
 @router.get("/stats", response_model=UserStats)
 def get_user_stats(user_id: int = Query(...)):
