@@ -8,4 +8,5 @@ router = APIRouter()
 
 @router.post("/users/", response_model=UserOut)
 async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    print(f"[DEBUG] Получен пользователь: {user.telegram_id}, {user.username}")
     return await crud_user.create_or_update_user(db, user)
