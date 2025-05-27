@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
+from datetime import datetime
 
 from app.database import get_db
 from app.models.question import Question
@@ -25,7 +26,7 @@ async def get_questions(
         .join(UserProgress, Question.id == UserProgress.question_id) \
         .where(
             #заглушка
-            UserProgress.user_id == 'ddf6c239-6c30-4b58-9be8-bc209cc89a9b',
+            UserProgress.user_id == user_id, #сейчас работать не будет, нужно настроить раздачу и использование user_id
             UserProgress.next_due_at <= datetime.utcnow(),
         )
 
