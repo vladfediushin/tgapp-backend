@@ -15,5 +15,5 @@ def get_user_stats(user_id: int = Query(...)):
         user_id=user_id,
         answered=total,
         correct=correct,
-        total_questions=50  # пока просто заглушка
+        total_questions=total
     )

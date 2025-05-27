@@ -1,7 +1,7 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import users, questions, user_progress
+from app.routers import users, questions, user_progress, stats
 
 
 app = FastAPI()
@@ -21,3 +21,4 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(questions.router)
 app.include_router(user_progress.router)
+app.include_router(stats.router)
