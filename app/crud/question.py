@@ -1,0 +1,69 @@
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
+from typing import List, Optional
+
+from app.models.question import Question
+from app.models.user_progress import UserProgress
+
+async def fetch_questions_for_user(
+    db: AsyncSession,
+    user_id: str,
+    country: str,
+    language: str,
+    mode: str,
+    topic: Optional[str] = None,
+) -> List[Question]:
+    """
+    Возвращает список вопросов для пользователя по заданным параметрам.
+    mode может быть:
+      - 'interval'   : интервальные вопросы (next_due_at <= now)
+      - 'all'        : все вопросы
+      - 'new_only'   : только новые (без прогресса)
+      - 'errors_only': только ошибочные (is_correct=False)
+    """
+    # Выбор логики по режиму
+    if mode == 'interval':
+        stmt = (
+            select(Question)
+            .join(UserProgress, Question.id == UserProgress.question_id)
+            .where(
+                UserProgress.user_id == user_id,
+                UserProgress.next_due_at <= datetime.utcnow(),
+            )
+        )
+    elif mode == 'all':
+        # TODO: вернуть все вопросы, без учета due date и прогресса
+        # stmt = select(Question)
+        # .where(Question.country == country, Question.language == language)
+        raise NotImplementedError("Mode 'all' not implemented yet")
+    elif mode == 'new_only':
+        # TODO: вернуть только новые вопросы, у которых нет записи в UserProgress для user_id
+        # stmt = select(Question)
+        # .outerjoin(UserProgress)
+        # .where(UserProgress.user_id == user_id, UserProgress.id == None)
+        raise NotImplementedError("Mode 'new_only' not implemented yet")
+    elif mode == 'errors_only':
+        # TODO: вернуть только вопросы с неверным ответом (is_correct=False)
+        # stmt = select(Question)
+        # .join(UserProgress)
+        # .where(UserProgress.user_id == user_id, UserProgress.is_correct == False)
+        raise NotImplementedError("Mode 'errors_only' not implemented yet")
+    else:
+        # Неизвестный режим: по умолчанию интервальные
+        stmt = (
+            select(Question)
+            .join(UserProgress, Question.id == UserProgress.question_id)
+            .where(UserProgress.user_id == user_id)
+        )
+
+    # Применяем общие фильтры: страна и язык
+    stmt = stmt.where(Question.country == country)
+    stmt = stmt.where(Question.language == language)
+
+    # Опциональный фильтр по теме
+    if topic:
+        stmt = stmt.where(Question.topic == topic)
+
+    result = await db.execute(stmt)
+    return result.scalars().all()
