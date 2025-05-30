@@ -1,13 +1,20 @@
 # backend/app/main.py
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import Response
+
 from app.routers import users, questions, user_progress
 
+# Настройка логгера
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api")
 
 app = FastAPI()
 
+# CORS
 origins = [
-    "https://tgapp-frontend.vercel.app"
+    "https://tgapp-frontend.vercel.app",
 ]
 
 app.add_middleware(
@@ -18,6 +25,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware для логирования всех запросов
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    # Логируем метод и URL
+    logger.info(f">>> {request.method} {request.url}")
+
+    # Логируем тело запроса (если есть)
+    body = await request.body()
+    if body:
+        try:
+            logger.info(f"    Body: {body.decode('utf-8')}")
+        except Exception:
+            logger.info(f"    Body (binary): {body}")
+
+    # Прокидываем запрос дальше
+    response: Response = await call_next(request)
+
+    # Логируем статус ответа
+    logger.info(f"<<< Response {response.status_code} for {request.method} {request.url.path}")
+    return response
+
+# Подключение роутеров
 app.include_router(users.router)
 app.include_router(questions.router)
 app.include_router(user_progress.router)
