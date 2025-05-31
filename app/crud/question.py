@@ -1,5 +1,6 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
 from datetime import datetime
 from typing import List, Optional
 
@@ -26,12 +27,15 @@ async def fetch_questions_for_user(
     if mode == 'interval':
         stmt = (
             select(Question)
-            .join(UserProgress, Question.id == UserProgress.question_id)
+            .outerjoin(UserProgress,
+                (Question.id == UserProgress.question_id)
+                &(UserProgress.user_id == user_id))
             .where(
-                UserProgress.user_id == user_id,
-                UserProgress.next_due_at <= datetime.utcnow(),
+                ((UserProgress.next_due_at <= datetime.utcnow())
+                 | (UserProgress.user_id == None))
             )
-        )
+            )
+        
     elif mode == 'all':
         # TODO: вернуть все вопросы, без учета due date и прогресса
         # stmt = select(Question)
@@ -65,5 +69,10 @@ async def fetch_questions_for_user(
     if topic:
         stmt = stmt.where(Question.topic == topic)
 
-    result = await db.execute(stmt)
+    random_stmt = (
+        stmt
+        .order_by(func.random())   # Postgres: RANDOM()
+    )
+
+    result = await db.execute(random_stmt)
     return result.scalars().all()
