@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import joinedload
 from app.models.user_progress import UserProgress
 from app.models.question import Question
-from app.schemas.user_progress import UserProgressCreate
+from app.schemas.answer import AnswerSubmit
 
 # Предвычисленная последовательность Фибоначчи на 20 уровней (до ~18 лет)
 FIB_SEQUENCE = [
@@ -28,7 +28,7 @@ def calculate_next_due_date(repetition_count: int) -> datetime:
 
 async def create_or_update_progress(
     db: AsyncSession,
-    data: UserProgressCreate
+    data: AnswerSubmit
 ) -> UserProgress:
     """
     Создаёт или обновляет запись UserProgress при ответе пользователя.
@@ -55,7 +55,7 @@ async def create_or_update_progress(
         if data.is_correct:
             prog.repetition_count += 1
         else:
-            prog.repetition_count = 1
+            prog.repetition_count = 0
         prog.is_correct = data.is_correct
         prog.last_answered_at = now
         prog.next_due_at = calculate_next_due_date(prog.repetition_count)
