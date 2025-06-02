@@ -72,7 +72,7 @@ async def save_user_progress(
 это мы допишем потом
 """
 @user_progress_router.get(
-        "/get_for_user", 
+        "/get_user_stats", 
         response_model=UserProgressOut)
 async def get_user_progress(
     user_id: UUID,
