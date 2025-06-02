@@ -47,6 +47,6 @@ async def log_requests(request: Request, call_next):
     return response
 
 # Подключение роутеров
-app.include_router(users_router.router)
-app.include_router(questions_router.router)
-app.include_router(user_progress_router.router)
+app.include_router(users_router)
+app.include_router(questions_router)
+app.include_router(user_progress_router)
