@@ -46,6 +46,10 @@ async def log_requests(request: Request, call_next):
     logger.info(f"<<< Response {response.status_code} for {request.method} {request.url.path}")
     return response
 
+@app.get("/")
+async def root():
+    return {"message": "Backend is alive. Go to /docs for API info."}
+
 # Подключение роутеров
 app.include_router(users_router)
 app.include_router(questions_router)
