@@ -1,4 +1,5 @@
-from app.main import logger
+import logging
+logger = logging.getLogger("api")
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from typing import List, Optional
