@@ -1,3 +1,5 @@
+from app.main import logger
+
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from typing import List, Optional
 from uuid import UUID
