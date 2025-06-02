@@ -66,7 +66,11 @@ async def save_user_progress(
         progress = await crud_progress.create_or_update_progress(db, progress_data)
         return progress
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback, sys
+        tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        logger.error(f"[save_user_progress] Unhandled exception:\n{tb}")
+        # Возвращаем HTTP 500 с кратким сообщением
+        raise HTTPException(status_code=500, detail="Internal server error, see logs for details")
 
 """
 это мы допишем потом
