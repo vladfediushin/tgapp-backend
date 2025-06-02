@@ -5,7 +5,7 @@ from datetime import datetime
 
 class AnswerSubmit(BaseModel):
     user_id: UUID
-    question_id: UUID
+    question_id: int
     is_correct: bool
 
     class Config:
@@ -43,7 +43,7 @@ class UserStats(BaseModel):
 class UserProgressOut(BaseModel):
     id: UUID
     user_id: UUID
-    question_id: UUID
+    question_id: int
     repetition_count: int
     is_correct: bool
     last_answered_at: datetime

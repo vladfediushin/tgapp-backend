@@ -10,7 +10,7 @@ from app.routers import users_router, questions_router, user_progress_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("api")
 
-app = FastAPI()
+app = FastAPI(docs_url="/docs", redoc_url="/redoc")
 
 # CORS
 origins = [
