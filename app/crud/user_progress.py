@@ -32,7 +32,6 @@ async def create_or_update_progress(
 ) -> UserProgress:
     """
     Создаёт или обновляет запись UserProgress при ответе пользователя.
-    Фильтрует по полям country и language из таблицы Question.
     Логика repetition_count: +1 при правильном ответе, сброс на 1 при ошибке.
     """
     stmt = (
@@ -41,8 +40,6 @@ async def create_or_update_progress(
         .where(
             UserProgress.user_id == data.user_id,
             UserProgress.question_id == data.question_id,
-            Question.country == data.country,
-            Question.language == data.language,
         )
     )
     result = await db.execute(stmt)
