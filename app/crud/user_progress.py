@@ -32,7 +32,7 @@ async def create_or_update_progress(
 ) -> UserProgress:
     """
     Создаёт или обновляет запись UserProgress при ответе пользователя.
-    Логика repetition_count: +1 при правильном ответе, сброс на 1 при ошибке.
+    Логика repetition_count: +1 при правильном ответе, сброс на 0 при ошибке.
     """
     stmt = (
         select(UserProgress)
@@ -58,17 +58,30 @@ async def create_or_update_progress(
         prog.next_due_at = calculate_next_due_date(prog.repetition_count)
     else:
         # Создание новой записи
-        reps = 1
-        next_due = calculate_next_due_date(reps)
-        prog = UserProgress(
-            user_id=data.user_id,
-            question_id=data.question_id,
-            is_correct=data.is_correct,
-            repetition_count=reps,
-            last_answered_at=now,
-            next_due_at=next_due,
-        )
-        db.add(prog)
+        if data.is_correct:
+            reps = 1
+            next_due = calculate_next_due_date(reps)
+            prog = UserProgress(
+                user_id=data.user_id,
+                question_id=data.question_id,
+                is_correct=data.is_correct,
+                repetition_count=reps,
+                last_answered_at=now,
+                next_due_at=next_due,
+                )
+            db.add(prog)
+        else:
+            reps = 0
+            next_due = calculate_next_due_date(reps)
+            prog = UserProgress(
+                user_id=data.user_id,
+                question_id=data.question_id,
+                is_correct=data.is_correct,
+                repetition_count=reps,
+                last_answered_at=now,
+                next_due_at=next_due,
+                )
+            db.add(prog)
 
     await db.commit()
     await db.refresh(prog)
