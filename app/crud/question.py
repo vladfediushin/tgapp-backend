@@ -4,8 +4,8 @@ from sqlalchemy import func
 from datetime import datetime
 from typing import List, Optional
 
-from app.models.question import Question
-from app.models.user_progress import UserProgress
+from app.models import Question
+from app.models import UserProgress
 
 async def fetch_questions_for_user(
     db: AsyncSession,

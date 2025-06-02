@@ -2,8 +2,8 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.models.user import User
-from app.schemas.user import UserCreate
+from app.models import User
+from app.schemas import UserCreate
 from sqlalchemy.exc import NoResultFound
 from datetime import datetime
 

@@ -5,9 +5,9 @@ from uuid import UUID
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import joinedload
-from app.models.user_progress import UserProgress
-from app.models.question import Question
-from app.schemas.answer import AnswerSubmit
+from app.models import UserProgress
+from app.models import Question
+from app.schemas import AnswerSubmit
 
 # Предвычисленная последовательность Фибоначчи на 20 уровней (до ~18 лет)
 FIB_SEQUENCE = [
