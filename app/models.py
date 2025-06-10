@@ -44,6 +44,9 @@ class User(Base):
     first_name = Column(Text)
     last_name = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    exam_country = Column(Text)
+    exam_language = Column(Text)
+    ui_language = Column(Text)
     user_progress = relationship(
         "UserProgress",
         back_populates="user",
