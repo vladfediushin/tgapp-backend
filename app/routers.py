@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, UserStats
-from app.crud.question import fetch_questions_for_user
+from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages
 from app.crud import user_progress as crud_progress
 from app.crud import user as crud_user
 
@@ -16,14 +16,19 @@ PREFIX = ""
 
 questions_router = APIRouter(
     prefix=f"{PREFIX}/questions",
-    tags=["questions"],
-)
+    tags=["questions"])
+
+@questions_router.get("/countries", response_model=List[str])
+async def list_countries(db: AsyncSession = Depends(get_db)):
+    return await get_distinct_countries(db)
+
+@questions_router.get("/languages", response_model=List[str])
+async def list_languages(db: AsyncSession = Depends(get_db)):
+    return await get_distinct_languages(db)
 
 @questions_router.get("/", response_model=List[QuestionOut])
 async def get_questions(
     user_id: str = Query(..., description="User ID from Telegram WebApp"),
-    country: str = Query(..., description="Country code, e.g. AM"),
-    language: str = Query(..., description="Language code, e.g. ru"),
     mode: str = Query(..., description="Mode of questions: interval, all, new_only, errors_only"),
     topic: Optional[str] = Query(None, description="Optional topic filter"),
     db: AsyncSession = Depends(get_db)
@@ -36,11 +41,12 @@ async def get_questions(
       - new_only: только новые вопросы
       - errors_only: только неверные ответы
     """
+    user = await crud_user.get_by_telegram_id(db, int(user_id))
     return await fetch_questions_for_user(
         db=db,
         user_id=user_id,
-        country=country,
-        language=language,
+        country=user.exam_country,
+        language=user.exam_language,
         mode=mode,
         topic=topic,
     )
@@ -98,6 +104,33 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     print(f"[DEBUG] Получен пользователь: {user.telegram_id}, {user.username}")
     return await crud_user.create_or_update_user(db, user)
 
+@users_router.get("/me", response_model=UserOut)
+async def read_user(
+    telegram_id: int = Query(..., description="Telegram ID from WebApp"),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await crud_user.get_by_telegram_id(db, telegram_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
+
+@users_router.patch(
+    "/{user_id}",
+    response_model=UserOut,
+    status_code=status.HTTP_200_OK,
+)
+async def update_user_profile(
+    user_id: UUID,
+    fields: dict[str, str],  # или: UserUpdate, если введёте соответствующую Pydantic-схему
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Поля fields могут содержать exam_country и/или exam_language.
+    """
+    user = await crud_user.update_user(db, user_id, **fields)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
 
 
 

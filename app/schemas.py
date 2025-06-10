@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, constr
 from typing import Any, Optional
 from uuid import UUID
 from datetime import datetime
@@ -58,10 +58,14 @@ class UserCreate(BaseModel):
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    exam_country: constr(min_length=2, max_length=2)
+    exam_language: constr(min_length=2, max_length=2)
 
 class UserOut(UserCreate):
     id: UUID
     created_at: datetime
+    exam_country: Optional[constr(min_length=2, max_length=2)]
+    exam_language: Optional[constr(min_length=2, max_length=2)]
 
     class Config:
         orm_mode = True

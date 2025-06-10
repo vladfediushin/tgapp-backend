@@ -1,4 +1,5 @@
 from sqlalchemy.future import select
+from sqlalchemy import distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
 from datetime import datetime
@@ -76,3 +77,14 @@ async def fetch_questions_for_user(
 
     result = await db.execute(random_stmt)
     return result.scalars().all()
+
+# Функции для получения доступных стран и языков в самом начале сессии
+async def get_distinct_countries(db: AsyncSession) -> List[str]:
+    q = select(distinct(Question.country))
+    result = await db.execute(q)
+    return [row[0] for row in result.fetchall() if row[0] is not None]
+
+async def get_distinct_languages(db: AsyncSession) -> List[str]:
+    q = select(distinct(Question.language))
+    result = await db.execute(q)
+    return [row[0] for row in result.fetchall() if row[0] is not None]
