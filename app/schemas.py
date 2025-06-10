@@ -61,11 +61,15 @@ class UserCreate(BaseModel):
     exam_country: constr(min_length=2, max_length=2)
     exam_language: constr(min_length=2, max_length=2)
 
-class UserOut(UserCreate):
+class UserOut(BaseModel):
     id: UUID
     created_at: datetime
-    exam_country: Optional[constr(min_length=2, max_length=2)]
-    exam_language: Optional[constr(min_length=2, max_length=2)]
+    username: str
+    first_name: str
+    last_name: str
+    exam_country: str
+    exam_language: str
+    ui_language: str
 
     class Config:
         orm_mode = True
