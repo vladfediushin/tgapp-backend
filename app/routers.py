@@ -41,7 +41,7 @@ async def get_questions(
       - new_only: только новые вопросы
       - errors_only: только неверные ответы
     """
-    user = await crud_user.get_by_telegram_id(db, int(user_id))
+    user = await crud_user.get_user_by_telegram_id(db, int(user_id))
     return await fetch_questions_for_user(
         db=db,
         user_id=user_id,
@@ -104,14 +104,18 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     print(f"[DEBUG] Получен пользователь: {user.telegram_id}, {user.username}")
     return await crud_user.create_or_update_user(db, user)
 
-@users_router.get("/me", response_model=UserOut)
-async def read_user(
-    telegram_id: int = Query(..., description="Telegram ID from WebApp"),
+
+@users_router.get("/by-telegram-id/{telegram_id}", response_model=UserOut)
+async def get_user_by_telegram_id_endpoint(
+    telegram_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    user = await crud_user.get_by_telegram_id(db, telegram_id)
+    user = await crud_user.get_user_by_telegram_id(db, telegram_id=telegram_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
     return user
 
 @users_router.patch(
