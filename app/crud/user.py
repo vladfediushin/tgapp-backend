@@ -15,17 +15,27 @@ async def get_user_by_telegram_id(db: AsyncSession, telegram_id: int):
     return result.scalars().first()
 
 
-async def create_or_update_user(db: AsyncSession, user_data: UserCreate):
+async def create_or_update_user(
+    db: AsyncSession,
+    user_data: UserCreate
+) -> User:
+    """
+    Если пользователь с таким telegram_id есть — обновляем все поля,
+    иначе создаём нового и сразу сохраняем все поля из Pydantic-схемы.
+    """
     user = await get_user_by_telegram_id(db, user_data.telegram_id)
 
     if user:
-        # Обновим, если нужно
-        user.username = user_data.username
-        user.first_name = user_data.first_name
-        user.last_name = user_data.last_name
+        # Обновляем только те поля, что действительно пришли в запросе
+        update_data = user_data.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(user, field, value)
     else:
-        # Создадим нового
-        user = User(**user_data.dict(), created_at=datetime.utcnow())
+        # Создаём нового пользователя — все требуемые поля уже в user_data
+        user = User(
+            **user_data.dict(),
+            created_at=datetime.utcnow()
+        )
         db.add(user)
 
     await db.commit()

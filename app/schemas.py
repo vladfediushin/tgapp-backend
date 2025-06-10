@@ -60,6 +60,7 @@ class UserCreate(BaseModel):
     last_name: Optional[str] = None
     exam_country: constr(min_length=2, max_length=2)
     exam_language: constr(min_length=2, max_length=2)
+    ui_language: constr(min_length=2, max_length=2)
 
 class UserOut(BaseModel):
     id: UUID
