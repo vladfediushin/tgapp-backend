@@ -6,6 +6,7 @@ from app.models import User
 from app.schemas import UserCreate
 from sqlalchemy.exc import NoResultFound
 from datetime import datetime
+from uuid import UUID
 
 
 async def get_user_by_telegram_id(db: AsyncSession, telegram_id: int):
