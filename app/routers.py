@@ -28,9 +28,26 @@ async def list_languages(db: AsyncSession = Depends(get_db)):
 
 @questions_router.get("/", response_model=List[QuestionOut])
 async def get_questions(
-    user_id: UUID = Query(..., description="Internal user ID"),
-    mode: str = Query(..., description="Mode of questions: interval, all, new_only, errors_only"),
-    topic: Optional[str] = Query(None, description="Optional topic filter"),
+    user_id: UUID = Query(
+        ...,
+        description="Internal user UUID (внутренний идентификатор пользователя)"
+    ),
+    mode: str = Query(
+        ...,
+        description="Mode of questions: interval, all, new_only, errors_only"
+    ),
+    country: str = Query(
+        ...,
+        description="Exam country code, e.g. 'am', 'ru'"
+    ),
+    language: str = Query(
+        ...,
+        description="Exam language code, e.g. 'ru', 'en'"
+    ),
+    topic: Optional[str] = Query(
+        None,
+        description="Optional topic filter"
+    ),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -41,7 +58,9 @@ async def get_questions(
       - new_only: только новые вопросы
       - errors_only: только неверные ответы
     """
-    user = await crud_user.get_user_by_telegram_id(db, int(user_id))
+    user = await crud_user.get_user_by_id(db, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     return await fetch_questions_for_user(
         db=db,
         user_id=user_id,

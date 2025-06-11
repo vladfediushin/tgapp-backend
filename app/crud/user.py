@@ -14,6 +14,10 @@ async def get_user_by_telegram_id(db: AsyncSession, telegram_id: int):
     result = await db.execute(select(User).where(User.telegram_id == telegram_id))
     return result.scalars().first()
 
+async def get_user_by_id(db: AsyncSession, user_id: UUID) -> User | None:
+    q = select(User).where(User.id == user_id)
+    result = await db.execute(q)
+    return result.scalars().first()
 
 async def create_or_update_user(
     db: AsyncSession,
