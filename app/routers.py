@@ -28,7 +28,7 @@ async def list_languages(db: AsyncSession = Depends(get_db)):
 
 @questions_router.get("/", response_model=List[QuestionOut])
 async def get_questions(
-    user_id: str = Query(..., description="User ID from Telegram WebApp"),
+    user_id: UUID = Query(..., description="Internal user ID"),
     mode: str = Query(..., description="Mode of questions: interval, all, new_only, errors_only"),
     topic: Optional[str] = Query(None, description="Optional topic filter"),
     db: AsyncSession = Depends(get_db)
