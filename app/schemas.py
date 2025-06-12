@@ -65,9 +65,9 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: UUID
     created_at: datetime
-    username: str
-    first_name: str
-    last_name: str
+    username: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
     exam_country: str
     exam_language: str
     ui_language: str
