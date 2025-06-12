@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
-from app.routers import users_router, questions_router, user_progress_router
+from app.routers import users_router, questions_router, user_progress_router, topics_router
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
@@ -54,3 +54,4 @@ async def root():
 app.include_router(users_router)
 app.include_router(questions_router)
 app.include_router(user_progress_router)
+app.include_router(topics_router)

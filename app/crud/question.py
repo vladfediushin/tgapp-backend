@@ -90,3 +90,12 @@ async def get_distinct_languages(db: AsyncSession) -> List[str]:
     q = select(distinct(Question.language))
     result = await db.execute(q)
     return [row[0] for row in result.fetchall() if row[0] is not None]
+
+# Получаем список тем для юзера
+async def fetch_topics(db: AsyncSession, country: str, language: str) -> list[str]:
+    q = await db.execute(
+        select(distinct(Question.topic))
+          .where(Question.country == country)
+          .where(Question.language == language)
+    )
+    return [row[0] for row in q.all()]

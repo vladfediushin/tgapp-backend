@@ -74,3 +74,6 @@ class UserOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class TopicsOut(BaseModel):
+    topics: list[str]

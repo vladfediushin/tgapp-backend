@@ -7,8 +7,8 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, UserStats
-from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages
+from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, TopicsOut, UserStats
+from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages, fetch_topics
 from app.crud import user_progress as crud_progress
 from app.crud import user as crud_user
 
@@ -160,6 +160,16 @@ async def update_user_profile(
     return user
 
 
+topics_router = APIRouter(tags=["topics"])
+
+@topics_router.get("/topics", response_model=TopicsOut)
+async def get_topics(
+    country: str = Query(..., description="Country code, e.g. AM"),
+    language: str = Query(..., description="Language code, e.g. ru"),
+    db: AsyncSession = Depends(get_db),
+):
+    topics = await fetch_topics(db, country, language)
+    return TopicsOut(topics=topics)
 
 
 """
