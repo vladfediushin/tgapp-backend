@@ -4,16 +4,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
 from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 
 from app.models import Question
 from app.models import UserProgress
 
 async def fetch_questions_for_user(
     db: AsyncSession,
-    user_id: str,
+    user_id: UUID,
     country: str,
     language: str,
     mode: str,
+    batch_size: int,
     topic: Optional[str] = None,
 ) -> List[Question]:
     """
@@ -72,7 +74,8 @@ async def fetch_questions_for_user(
 
     random_stmt = (
         stmt
-        .order_by(func.random())   # Postgres: RANDOM()
+        .order_by(func.random()
+        .limit(batch_size))   # Postgres: RANDOM()
     )
 
     result = await db.execute(random_stmt)

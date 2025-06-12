@@ -48,6 +48,9 @@ async def get_questions(
         None,
         description="Optional topic filter"
     ),
+    batch_size: int = Query(
+        30, ge=1, le=50
+    ),
     db: AsyncSession = Depends(get_db)
 ):
     """
