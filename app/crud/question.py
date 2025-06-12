@@ -72,10 +72,10 @@ async def fetch_questions_for_user(
     if topic:
         stmt = stmt.where(Question.topic == topic)
 
-    random_stmt = (
+    stmt = (
         stmt
-        .order_by(func.random()
-        .limit(batch_size))   # Postgres: RANDOM()
+        .order_by(func.random())
+        .limit(batch_size)
     )
 
     result = await db.execute(random_stmt)
