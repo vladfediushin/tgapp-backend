@@ -21,13 +21,12 @@ async def fetch_questions_for_user(
     """
     Возвращает список вопросов для пользователя по заданным параметрам.
     mode может быть:
-      - 'interval'   : интервальные вопросы (next_due_at <= now)
+      - 'interval_all'   : интервальные вопросы (next_due_at <= now)
       - 'all'        : все вопросы
       - 'new_only'   : только новые (без прогресса)
-      - 'errors_only': только ошибочные (is_correct=False)
+      - 'shown_before': только ошибочные (is_correct=False)
     """
-    # Выбор логики по режиму
-    if mode == 'interval':
+    if mode == 'interval_all':
         stmt = (
             select(Question)
             .outerjoin(UserProgress,
@@ -39,29 +38,29 @@ async def fetch_questions_for_user(
             )
             )
         
-    elif mode == 'all':
-        # TODO: вернуть все вопросы, без учета due date и прогресса
-        # stmt = select(Question)
-        # .where(Question.country == country, Question.language == language)
-        raise NotImplementedError("Mode 'all' not implemented yet")
     elif mode == 'new_only':
-        # TODO: вернуть только новые вопросы, у которых нет записи в UserProgress для user_id
-        # stmt = select(Question)
-        # .outerjoin(UserProgress)
-        # .where(UserProgress.user_id == user_id, UserProgress.id == None)
-        raise NotImplementedError("Mode 'new_only' not implemented yet")
-    elif mode == 'errors_only':
-        # TODO: вернуть только вопросы с неверным ответом (is_correct=False)
-        # stmt = select(Question)
-        # .join(UserProgress)
-        # .where(UserProgress.user_id == user_id, UserProgress.is_correct == False)
-        raise NotImplementedError("Mode 'errors_only' not implemented yet")
-    else:
-        # Неизвестный режим: по умолчанию интервальные
         stmt = (
             select(Question)
-            .join(UserProgress, Question.id == UserProgress.question_id)
-            .where(UserProgress.user_id == user_id)
+            .outerjoin(
+                UserProgress,
+                (Question.id == UserProgress.question_id)
+                & (UserProgress.user_id == user_id)
+            )
+            .where(UserProgress.question_id == None)
+        )
+    
+    elif mode == 'shown_before':
+        stmt = (
+            select(Question)
+            .join(
+                UserProgress,
+                (Question.id == UserProgress.question_id)
+                & (UserProgress.user_id == user_id)
+            )
+            .where(
+                (UserProgress.next_due_at <= datetime.utcnow())
+                | (UserProgress.next_due_at == None)
+            )
         )
 
     # Применяем общие фильтры: страна и язык

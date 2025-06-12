@@ -34,7 +34,7 @@ async def get_questions(
     ),
     mode: str = Query(
         ...,
-        description="Mode of questions: interval, all, new_only, errors_only"
+        description="Mode of questions: interval_all, all, new_only, shown_before"
     ),
     country: str = Query(
         ...,
@@ -56,10 +56,10 @@ async def get_questions(
     """
     Возвращает список вопросов для данного пользователя с учётом режима и фильтров.
     Поддерживаемые режимы:
-      - interval: интервальные вопросы (next_due_at <= now)
+      - interval_all: интервальные вопросы (next_due_at <= now)
       - all: все вопросы
       - new_only: только новые вопросы
-      - errors_only: только неверные ответы
+      - shown_before: показанные прежде вопросы
     """
     user = await crud_user.get_user_by_id(db, user_id)
     if user is None:
