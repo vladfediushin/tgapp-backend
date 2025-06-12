@@ -70,6 +70,7 @@ async def get_questions(
         country=user.exam_country,
         language=user.exam_language,
         mode=mode,
+        batch_size=batch_size,
         topic=topic,
     )
 
