@@ -78,7 +78,7 @@ async def fetch_questions_for_user(
         .limit(batch_size)
     )
 
-    result = await db.execute(random_stmt)
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 # Функции для получения доступных стран и языков в самом начале сессии
