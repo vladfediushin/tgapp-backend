@@ -1,8 +1,8 @@
 # app/crud/user.py
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.models import User
+from sqlalchemy import select, func
+from app.models import User, Question, UserProgress
 from app.schemas import UserCreate
 from sqlalchemy.exc import NoResultFound
 from datetime import datetime
@@ -65,3 +65,47 @@ async def update_user(db: AsyncSession, user_id: UUID, **fields) -> Optional[Use
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
+    """
+    Считает:
+      • total_questions  — все вопросы по стране / языку юзера
+      • answered         — сколько юзер уже ответил
+      • correct          — сколько ответил правильно
+    """
+    # 1) получаем самого пользователя, чтобы узнать country / language
+    user = await get_user_by_id(db, user_id)
+    if not user:
+        return {"detail": "User not found"}   # либо бросайте HTTPException в роутере
+
+    # 2) общее число доступных вопросов
+    total_q_stmt = (
+        select(func.count())
+        .select_from(Question)
+        .where(Question.country == user.exam_country)
+        .where(Question.language == user.exam_language)
+    )
+    total_questions = (await db.execute(total_q_stmt)).scalar_one()
+
+    # 3) сколько ответил
+    answered_stmt = (
+        select(func.count())
+        .select_from(UserProgress)
+        .where(UserProgress.user_id == user_id)
+    )
+    answered = (await db.execute(answered_stmt)).scalar_one()
+
+    # 4) сколько ответил правильно
+    correct_stmt = (
+        select(func.count())
+        .select_from(UserProgress)
+        .where(UserProgress.user_id == user_id, UserProgress.is_correct.is_(True))
+    )
+    correct = (await db.execute(correct_stmt)).scalar_one()
+
+    return {
+        "total_questions": total_questions,
+        "answered": answered,
+        "correct": correct,
+    }

@@ -123,31 +123,11 @@ users_router = APIRouter(
 )
 
 @users_router.get("/{user_id}/stats", response_model = UserStatsOut)
-async def get_user_stats(
-    user_id: UUID,
-    db: AsyncSession = Depends(get_db),
-):
-    total_q_stmt = select(func.count()).select_from(Question)\
-        .where(Question.country == user.exam_country)\
-        .where(Question.language == user.exam_language)
-    total_questions = (await db.execute(total_q_stmt)).scalar_one()
-
-    # 3) Число отвеченных (любое is_correct)
-    answered_stmt = select(func.count()).select_from(UserProgress)\
-        .where(UserProgress.user_id == user_id)
-    answered = (await db.execute(answered_stmt)).scalar_one()
-
-    # 4) Число верных ответов
-    correct_stmt = select(func.count()).select_from(UserProgress)\
-        .where(UserProgress.user_id == user_id)\
-        .where(UserProgress.is_correct.is_(True))
-    correct = (await db.execute(correct_stmt)).scalar_one()
-
-    return {
-        "total_questions": total_questions,
-        "answered": answered,
-        "correct": correct,
-    }
+async def user_stats(user_id: UUID, db: AsyncSession = Depends(get_db)):
+    stats = await crud_user.get_user_stats(db, user_id)
+    if "detail" in stats:               # пользователь не найден
+        raise HTTPException(status_code=404, detail=stats["detail"])
+    return stats
 
 @users_router.post("/", response_model=UserOut)
 async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
@@ -198,24 +178,3 @@ async def get_topics(
     topics = await fetch_topics(db, country, language)
     return TopicsOut(topics=topics)
 
-
-"""
-stats_router = APIRouter(
-    prefix=f"{PREFIX}",
-    tags=["statistics"],
-) # оставить на потом, мб использовать просто user_progress_router?
-
-@stats_router.get("/", response_model=UserStats)
-def get_user_stats(user_id: int = Query(...)):
-    user_answers = [a for a in answers_log if a.user_id == user_id]
-    total = len(user_answers)
-    correct = sum(1 for a in user_answers if a.is_correct)
-
-    return UserStats(
-        user_id=user_id,
-        answered=total,
-        correct=correct,
-        total_questions=total
-    )
-
-    """
