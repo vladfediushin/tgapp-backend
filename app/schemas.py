@@ -30,14 +30,10 @@ class QuestionOut(BaseModel):
 
 
 
-class UserStats(BaseModel):
-    user_id: int
+class UserStatsOut(BaseModel):
+    total_questions: int
     answered: int
     correct: int
-    total_questions: int
-   
-    class Config:
-        orm_mode = True
 
 
 class UserProgressOut(BaseModel):

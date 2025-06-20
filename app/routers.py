@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, TopicsOut, UserStats
+from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, TopicsOut, UserStatsOut
 from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages, fetch_topics
 from app.crud import user_progress as crud_progress
 from app.crud import user as crud_user
@@ -121,6 +121,33 @@ users_router = APIRouter(
     prefix=f"{PREFIX}/users",
     tags=["users"],
 )
+
+@users_router.get("/{user_id}/stats", response_model = UserStatsOut)
+async def get_user_stats(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    total_q_stmt = select(func.count()).select_from(Question)\
+        .where(Question.country == user.exam_country)\
+        .where(Question.language == user.exam_language)
+    total_questions = (await db.execute(total_q_stmt)).scalar_one()
+
+    # 3) Число отвеченных (любое is_correct)
+    answered_stmt = select(func.count()).select_from(UserProgress)\
+        .where(UserProgress.user_id == user_id)
+    answered = (await db.execute(answered_stmt)).scalar_one()
+
+    # 4) Число верных ответов
+    correct_stmt = select(func.count()).select_from(UserProgress)\
+        .where(UserProgress.user_id == user_id)\
+        .where(UserProgress.is_correct.is_(True))
+    correct = (await db.execute(correct_stmt)).scalar_one()
+
+    return {
+        "total_questions": total_questions,
+        "answered": answered,
+        "correct": correct,
+    }
 
 @users_router.post("/", response_model=UserOut)
 async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
