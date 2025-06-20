@@ -124,7 +124,7 @@ users_router = APIRouter(
 
 @users_router.get("/{user_id}/stats", response_model = UserStatsOut)
 async def get_user_stats(
-    user_id: uuid.UUID,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
 ):
     total_q_stmt = select(func.count()).select_from(Question)\
