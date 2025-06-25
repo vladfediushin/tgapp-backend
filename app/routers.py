@@ -44,7 +44,7 @@ async def get_questions(
         ...,
         description="Exam language code, e.g. 'ru', 'en'"
     ),
-    topic: Optional[List[str]] = Query(
+    topics: Optional[List[str]] = Query(
         None,
         description="Optional topic filter"
     ),
