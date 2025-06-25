@@ -46,6 +46,7 @@ async def get_questions(
     ),
     topics: Optional[List[str]] = Query(
         None,
+        alias="topic",
         description="Optional topic filter"
     ),
     batch_size: int = Query(
