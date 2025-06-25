@@ -16,28 +16,32 @@ async def fetch_questions_for_user(
     language: str,
     mode: str,
     batch_size: int,
-    topic: Optional[str] = None,
+    topics: Optional[List[str]] = None,  # теперь список тем
 ) -> List[Question]:
     """
     Возвращает список вопросов для пользователя по заданным параметрам.
     mode может быть:
-      - 'interval_all'   : интервальные вопросы (next_due_at <= now)
-      - 'all'        : все вопросы
-      - 'new_only'   : только новые (без прогресса)
-      - 'shown_before': только ошибочные (is_correct=False)
+      - 'interval_all'  : интервальные вопросы (next_due_at <= now)
+      - 'new_only'      : только новые (без прогресса)
+      - 'shown_before'  : только показанные раньше (is_correct=False)
     """
+    # Нормализация кодов (опционально)
+    country = country.upper()
+    language = language.lower()
+
     if mode == 'interval_all':
         stmt = (
             select(Question)
-            .outerjoin(UserProgress,
+            .outerjoin(
+                UserProgress,
                 (Question.id == UserProgress.question_id)
-                &(UserProgress.user_id == user_id))
+                & (UserProgress.user_id == user_id)
+            )
             .where(
-                ((UserProgress.next_due_at <= datetime.utcnow())
-                 | (UserProgress.user_id == None))
+                (UserProgress.next_due_at <= datetime.utcnow())
+                | (UserProgress.user_id == None)
             )
-            )
-        
+        )
     elif mode == 'new_only':
         stmt = (
             select(Question)
@@ -46,9 +50,8 @@ async def fetch_questions_for_user(
                 (Question.id == UserProgress.question_id)
                 & (UserProgress.user_id == user_id)
             )
-            .where(UserProgress.question_id == None)
+            .where(UserProgress.user_id == None)
         )
-    
     elif mode == 'shown_before':
         stmt = (
             select(Question)
@@ -57,9 +60,14 @@ async def fetch_questions_for_user(
                 (Question.id == UserProgress.question_id)
                 & (UserProgress.user_id == user_id)
             )
-            .where(
-                (UserProgress.next_due_at <= datetime.utcnow())
-                | (UserProgress.next_due_at == None)
+            .where(UserProgress.is_correct == False)
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported mode '{mode}'. "
+                "Valid modes: 'interval_all', 'new_only', 'shown_before'."
             )
         )
 
@@ -67,15 +75,12 @@ async def fetch_questions_for_user(
     stmt = stmt.where(Question.country == country)
     stmt = stmt.where(Question.language == language)
 
-    # Опциональный фильтр по теме
-    if topic:
-        stmt = stmt.where(Question.topic == topic)
+    # Фильтр по списку тем
+    if topics:
+        stmt = stmt.where(Question.topic.in_(topics))
 
-    stmt = (
-        stmt
-        .order_by(func.random())
-        .limit(batch_size)
-    )
+    # Перемешиваем и лимитируем
+    stmt = stmt.order_by(func.random()).limit(batch_size)
 
     result = await db.execute(stmt)
     return result.scalars().all()
