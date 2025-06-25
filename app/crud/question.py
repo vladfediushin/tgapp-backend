@@ -27,7 +27,7 @@ async def fetch_questions_for_user(
       - 'shown_before'  : только показанные раньше (is_correct=False)
       - 'topics'        : любые вопросы из указанного списка тем
     """
-    country = country.upper()
+    country = country.lower()
     language = language.lower()
 
     if mode == 'interval_all':
