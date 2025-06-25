@@ -17,7 +17,7 @@ async def fetch_questions_for_user(
     language: str,
     mode: str,
     batch_size: int,
-    topics: Optional[List[str]] = None,  # теперь список тем
+    topics: Optional[List[str]] = None,
 ) -> List[Question]:
     """
     Возвращает список вопросов для пользователя по заданным параметрам.
@@ -25,8 +25,8 @@ async def fetch_questions_for_user(
       - 'interval_all'  : интервальные вопросы (next_due_at <= now)
       - 'new_only'      : только новые (без прогресса)
       - 'shown_before'  : только показанные раньше (is_correct=False)
+      - 'topics'        : любые вопросы из указанного списка тем
     """
-    # Нормализация кодов (опционально)
     country = country.upper()
     language = language.lower()
 
@@ -63,16 +63,20 @@ async def fetch_questions_for_user(
             )
             .where(UserProgress.is_correct == False)
         )
+    elif mode == 'topics':
+        # Берём все вопросы, далее отфильтруем по списку тем
+        stmt = select(Question)
     else:
         raise HTTPException(
             status_code=400,
             detail=(
                 f"Unsupported mode '{mode}'. "
-                "Valid modes: 'interval_all', 'new_only', 'shown_before'."
+                "Valid modes: 'interval_all', 'new_only', "
+                "'shown_before', 'topics'."
             )
         )
 
-    # Применяем общие фильтры: страна и язык
+    # Обязательные фильтры по стране и языку
     stmt = stmt.where(Question.country == country)
     stmt = stmt.where(Question.language == language)
 

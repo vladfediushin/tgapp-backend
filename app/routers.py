@@ -26,7 +26,10 @@ async def list_countries(db: AsyncSession = Depends(get_db)):
 async def list_languages(db: AsyncSession = Depends(get_db)):
     return await get_distinct_languages(db)
 
-@questions_router.get("/", response_model=List[QuestionOut])
+@questions_router.get(
+    "/", 
+    response_model=List[QuestionOut]
+)
 async def get_questions(
     user_id: UUID = Query(
         ...,
@@ -34,7 +37,7 @@ async def get_questions(
     ),
     mode: str = Query(
         ...,
-        description="Mode of questions: interval_all, all, new_only, shown_before"
+        description="Mode of questions: interval_all, new_only, shown_before, topics"
     ),
     country: str = Query(
         ...,
@@ -47,24 +50,29 @@ async def get_questions(
     topics: Optional[List[str]] = Query(
         None,
         alias="topic",
-        description="Optional topic filter"
+        description="Optional topic filter — можно указывать несколько раз"
     ),
     batch_size: int = Query(
-        30, ge=1, le=50
+        30,
+        ge=1,
+        le=50,
+        description="Number of questions to fetch"
     ),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Возвращает список вопросов для данного пользователя с учётом режима и фильтров.
     Поддерживаемые режимы:
-      - interval_all: интервальные вопросы (next_due_at <= now)
-      - all: все вопросы
-      - new_only: только новые вопросы
-      - shown_before: показанные прежде вопросы
+      - interval_all: интервальные (next_due_at <= now)
+      - new_only: только новые
+      - shown_before: показанные прежде
+      - topics: любой вопрос, ограниченный списком тем
+    Параметр ?topic=A&topic=B будет собран в список topics=['A','B'].
     """
     user = await crud_user.get_user_by_id(db, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+
     return await fetch_questions_for_user(
         db=db,
         user_id=user_id,
@@ -72,7 +80,7 @@ async def get_questions(
         language=user.exam_language,
         mode=mode,
         batch_size=batch_size,
-        topic=topic,
+        topics=topics,      # ← передаём список, а не один
     )
 
 
