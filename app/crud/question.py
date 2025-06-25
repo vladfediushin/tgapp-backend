@@ -82,7 +82,7 @@ async def fetch_questions_for_user(
     if mode in ('interval_all', 'topics'):
         # Сначала вопросы с is_correct=False, потом случайно
         priority = case(
-            [(UserProgress.is_correct == False, 0)],
+            (UserProgress.is_correct == False, 0),
             else_=1
         )
         stmt = stmt.order_by(priority, func.random()).limit(batch_size)
