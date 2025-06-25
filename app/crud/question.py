@@ -1,7 +1,6 @@
 from sqlalchemy.future import select
-from sqlalchemy import distinct
+from sqlalchemy import func, distinct, case
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -19,18 +18,13 @@ async def fetch_questions_for_user(
     batch_size: int,
     topics: Optional[List[str]] = None,
 ) -> List[Question]:
-    """
-    Возвращает список вопросов для пользователя по заданным параметрам.
-    mode может быть:
-      - 'interval_all'  : интервальные вопросы (next_due_at <= now)
-      - 'new_only'      : только новые (без прогресса)
-      - 'shown_before'  : только показанные раньше (is_correct=False)
-      - 'topics'        : любые вопросы из указанного списка тем
-    """
     country = country.lower()
     language = language.lower()
+    if mode == 'topics' and not topics:
+        mode = 'interval_all'
 
     if mode == 'interval_all':
+        # Интервальные вопросы
         stmt = (
             select(Question)
             .outerjoin(
@@ -44,6 +38,7 @@ async def fetch_questions_for_user(
             )
         )
     elif mode == 'new_only':
+        # Только новые
         stmt = (
             select(Question)
             .outerjoin(
@@ -54,6 +49,7 @@ async def fetch_questions_for_user(
             .where(UserProgress.user_id == None)
         )
     elif mode == 'shown_before':
+        # Только некорректно отвеченные
         stmt = (
             select(Question)
             .join(
@@ -64,28 +60,34 @@ async def fetch_questions_for_user(
             .where(UserProgress.is_correct == False)
         )
     elif mode == 'topics':
-        # Берём все вопросы, далее отфильтруем по списку тем
-        stmt = select(Question)
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Unsupported mode '{mode}'. "
-                "Valid modes: 'interval_all', 'new_only', "
-                "'shown_before', 'topics'."
+        # Любые вопросы из указанных тем, но с JOIN, чтобы можно было сортировать по профилю
+        stmt = (
+            select(Question)
+            .outerjoin(
+                UserProgress,
+                (Question.id == UserProgress.question_id)
+                & (UserProgress.user_id == user_id)
             )
         )
+    else:
+        raise HTTPException(400, f"Unsupported mode '{mode}'")
 
-    # Обязательные фильтры по стране и языку
+    # Фильтрация по стране, языку и (опционально) темам
     stmt = stmt.where(Question.country == country)
     stmt = stmt.where(Question.language == language)
-
-    # Фильтр по списку тем
     if topics:
         stmt = stmt.where(Question.topic.in_(topics))
 
-    # Перемешиваем и лимитируем
-    stmt = stmt.order_by(func.random()).limit(batch_size)
+    # Сортировка и LIMIT
+    if mode in ('interval_all', 'topics'):
+        # Сначала вопросы с is_correct=False, потом случайно
+        priority = case(
+            [(UserProgress.is_correct == False, 0)],
+            else_=1
+        )
+        stmt = stmt.order_by(priority, func.random()).limit(batch_size)
+    else:
+        stmt = stmt.order_by(func.random()).limit(batch_size)
 
     result = await db.execute(stmt)
     return result.scalars().all()
