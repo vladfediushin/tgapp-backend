@@ -2,7 +2,7 @@ import logging
 logger = logging.getLogger("api")
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from typing import List, Optional
+from typing import List, Optional, Dict
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -164,7 +164,7 @@ async def get_user_by_telegram_id_endpoint(
 )
 async def update_user_profile(
     user_id: UUID,
-    fields: dict[str, str],  # или: UserUpdate, если введёте соответствующую Pydantic-схему
+    fields: Dict[str, str] = Body(...), # или: UserUpdate, если введёте соответствующую Pydantic-схему
     db: AsyncSession = Depends(get_db),
 ):
     """
