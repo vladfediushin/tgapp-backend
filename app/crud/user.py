@@ -93,6 +93,8 @@ async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
         select(func.count())
         .select_from(UserProgress)
         .where(UserProgress.user_id == user_id)
+        .where(Question.country == user.exam_country)
+        .where(Question.language == user.exam_language)
     )
     answered = (await db.execute(answered_stmt)).scalar_one()
 
@@ -101,6 +103,8 @@ async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
         select(func.count())
         .select_from(UserProgress)
         .where(UserProgress.user_id == user_id, UserProgress.is_correct.is_(True))
+        .where(Question.country == user.exam_country)
+        .where(Question.language == user.exam_language)
     )
     correct = (await db.execute(correct_stmt)).scalar_one()
 
