@@ -11,7 +11,6 @@ from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, 
 from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages, fetch_topics
 from app.crud import user_progress as crud_progress
 from app.crud import user as crud_user
-from app.crud import update_user_settings
 
 PREFIX = ""
 
@@ -167,7 +166,7 @@ async def patch_user_settings_endpoint(
     """
     Поля fields могут содержать exam_country и/или exam_language.
     """
-    updated = await update_user_settings(db, user_id, payload)
+    updated = await crud_user.update_user_settings(db, user_id, payload)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return updated
