@@ -3,7 +3,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.models import User, Question, UserProgress
-from app.schemas import UserCreate
+from app.schemas import UserCreate, UserSettingsUpdate
 from sqlalchemy.exc import NoResultFound
 from datetime import datetime
 from uuid import UUID
@@ -23,25 +23,33 @@ async def create_or_update_user(
     db: AsyncSession,
     user_data: UserCreate
 ) -> User:
-    """
-    Если пользователь с таким telegram_id есть — обновляем все поля,
-    иначе создаём нового и сразу сохраняем все поля из Pydantic-схемы.
-    """
-    user = await get_user_by_telegram_id(db, user_data.telegram_id)
+    user = await db.execute(select(User).where(User.telegram_id == user_data.telegram_id))
+    user = user.scalar_one_or_none()
 
     if user:
-        # Обновляем только те поля, что действительно пришли в запросе
         update_data = user_data.dict(exclude_unset=True)
         for field, value in update_data.items():
             setattr(user, field, value)
     else:
-        # Создаём нового пользователя — все требуемые поля уже в user_data
-        user = User(
-            **user_data.dict(),
-            created_at=datetime.utcnow()
-        )
+        user = User(**user_data.dict(), created_at=datetime.utcnow())
         db.add(user)
 
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+async def update_user_settings(
+    db: AsyncSession,
+    user_id: UUID,
+    settings: UserSettingsUpdate
+) -> User | None:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        return None
+
+    for field, value in settings.dict().items():
+        setattr(user, field, value)
     await db.commit()
     await db.refresh(user)
     return user

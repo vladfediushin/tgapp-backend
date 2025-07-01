@@ -7,10 +7,11 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, TopicsOut, UserStatsOut
+from app.schemas import QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, TopicsOut, UserStatsOut, UserSettingsUpdate
 from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages, fetch_topics
 from app.crud import user_progress as crud_progress
 from app.crud import user as crud_user
+from app.crud import update_user_settings
 
 PREFIX = ""
 
@@ -131,20 +132,20 @@ users_router = APIRouter(
     tags=["users"],
 )
 
-@users_router.get("/{user_id}/stats", response_model = UserStatsOut)
-async def user_stats(user_id: UUID, db: AsyncSession = Depends(get_db)):
+@users_router.get("/{user_id}/stats", response_model = UserStatsOut, status_code=status.HTTP_200_OK)
+async def user_stats_endpoint(user_id: UUID, db: AsyncSession = Depends(get_db)):
     stats = await crud_user.get_user_stats(db, user_id)
     if "detail" in stats:               # пользователь не найден
         raise HTTPException(status_code=404, detail=stats["detail"])
     return stats
 
-@users_router.post("/", response_model=UserOut)
-async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
+@users_router.post("/", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def upsert_user_endpoint(user: UserCreate, db: AsyncSession = Depends(get_db)):
     print(f"[DEBUG] Получен пользователь: {user.telegram_id}, {user.username}")
     return await crud_user.create_or_update_user(db, user)
 
 
-@users_router.get("/by-telegram-id/{telegram_id}", response_model=UserOut)
+@users_router.get("/by-telegram-id/{telegram_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def get_user_by_telegram_id_endpoint(
     telegram_id: int,
     db: AsyncSession = Depends(get_db),
@@ -157,23 +158,19 @@ async def get_user_by_telegram_id_endpoint(
         )
     return user
 
-@users_router.patch(
-    "/{user_id}",
-    response_model=UserOut,
-    status_code=status.HTTP_200_OK,
-)
-async def update_user_profile(
+@users_router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
+async def patch_user_settings_endpoint(
     user_id: UUID,
-    fields: Dict[str, str] = Body(...), # или: UserUpdate, если введёте соответствующую Pydantic-схему
+    payload: UserSettingsUpdate,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Поля fields могут содержать exam_country и/или exam_language.
     """
-    user = await crud_user.update_user(db, user_id, **fields)
-    if not user:
+    updated = await update_user_settings(db, user_id, payload)
+    if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return user
+    return updated
 
 
 topics_router = APIRouter(tags=["topics"])

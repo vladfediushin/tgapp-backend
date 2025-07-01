@@ -1,10 +1,21 @@
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import Column, Integer, Boolean, DateTime, Text, ForeignKey, JSON, BigInteger
+from sqlalchemy import Column, Integer, Boolean, DateTime, Text, ForeignKey, JSON, BigInteger, Date
 from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime
 import uuid
 
+
+class AnswerHistory(Base):
+    __tablename__ = "answer_history"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    user_id     = Column(UUID(as_uuid=True),  nullable=False)
+    question_id = Column(Integer,              nullable=False)
+    is_correct  = Column(Boolean,              nullable=False)
+    answered_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="answer_history")
 
 
 class Question(Base):
@@ -47,8 +58,15 @@ class User(Base):
     exam_country = Column(Text)
     exam_language = Column(Text)
     ui_language = Column(Text)
+    exam_date = Column(Date, nullable = True)
+    daily_goal = Column(Integer, nullable=True)
     user_progress = relationship(
         "UserProgress",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    answer_history  = relationship(
+        "AnswerHistory", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
     )

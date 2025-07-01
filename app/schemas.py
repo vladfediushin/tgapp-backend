@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, constr
 from typing import Any, Optional
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
 
 class AnswerSubmit(BaseModel):
     user_id: UUID
@@ -58,6 +58,13 @@ class UserCreate(BaseModel):
     exam_language: constr(min_length=2, max_length=2)
     ui_language: constr(min_length=2, max_length=2)
 
+class UserSettingsUpdate(BaseModel):
+    exam_country: constr(min_length=2, max_length=2)
+    exam_language: constr(min_length=2, max_length=2)
+    ui_language: constr(min_length=2, max_length=2)
+    exam_date: date
+    daily_goal: int
+
 class UserOut(BaseModel):
     id: UUID
     created_at: datetime
@@ -67,6 +74,8 @@ class UserOut(BaseModel):
     exam_country: str
     exam_language: str
     ui_language: str
+    exam_date: Optional[date]
+    daily_goal: Optional[int]
 
     class Config:
         orm_mode = True
