@@ -10,9 +10,9 @@ class AnswerHistory(Base):
     __tablename__ = "answer_history"
 
     id          = Column(Integer, primary_key=True, autoincrement=True)
-    user_id     = Column(UUID(as_uuid=True),  nullable=False)
-    question_id = Column(Integer,              nullable=False)
-    is_correct  = Column(Boolean,              nullable=False)
+    user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)  # FIXED: Added ForeignKey
+    question_id = Column(Integer, nullable=False)  # Note: No FK to questions since you removed it
+    is_correct  = Column(Boolean, nullable=False)
     answered_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="answer_history")
@@ -58,14 +58,15 @@ class User(Base):
     exam_country = Column(Text)
     exam_language = Column(Text)
     ui_language = Column(Text)
-    exam_date = Column(Date, nullable = True)
-    daily_goal = Column(Integer, nullable=True)
+    exam_date = Column(Date, nullable=True)  # FIXED: Made nullable for optional feature
+    daily_goal = Column(Integer, nullable=True)  # FIXED: Made nullable for optional feature
+    
     user_progress = relationship(
         "UserProgress",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    answer_history  = relationship(
+    answer_history = relationship(
         "AnswerHistory", 
         back_populates="user", 
         cascade="all, delete-orphan"
