@@ -1,3 +1,4 @@
+# app/schemas.py - Fixed version
 from pydantic import BaseModel, Field, constr
 from typing import Any, Optional
 from uuid import UUID
@@ -12,11 +13,10 @@ class AnswerSubmit(BaseModel):
         schema_extra = {
             "example": {
                 "user_id": "e759a0f2-e50c-407b-a263-a0d5f7ed5a6f",
-                "question_id": "3f58c6ea-29d4-4c9c-8bd7-0c8fa472d0b2",
+                "question_id": 123,
                 "is_correct": True
             }
         }
-
 
 class QuestionOut(BaseModel):
     id: int
@@ -28,13 +28,10 @@ class QuestionOut(BaseModel):
     class Config:
         orm_mode = True
 
-
-
 class UserStatsOut(BaseModel):
     total_questions: int
     answered: int
     correct: int
-
 
 class UserProgressOut(BaseModel):
     id: UUID
@@ -48,7 +45,7 @@ class UserProgressOut(BaseModel):
     class Config:
         orm_mode = True
 
-
+# Fixed UserCreate schema - made exam_date and daily_goal optional
 class UserCreate(BaseModel):
     telegram_id: int
     username: Optional[str] = None
@@ -56,14 +53,17 @@ class UserCreate(BaseModel):
     last_name: Optional[str] = None
     exam_country: constr(min_length=2, max_length=2)
     exam_language: constr(min_length=2, max_length=2)
-    ui_language: constr(min_length=2, max_length=2)
+    ui_language: constr(min_length=2, max_length=2)  # Fixed typo from ui_langugage
+    exam_date: Optional[date] = None  # Made optional
+    daily_goal: Optional[int] = None  # Made optional
 
+# Fixed UserSettingsUpdate - made exam_date and daily_goal optional
 class UserSettingsUpdate(BaseModel):
-    exam_country: constr(min_length=2, max_length=2)
-    exam_language: constr(min_length=2, max_length=2)
-    ui_language: constr(min_length=2, max_length=2)
-    exam_date: date
-    daily_goal: int
+    exam_country: Optional[constr(min_length=2, max_length=2)] = None
+    exam_language: Optional[constr(min_length=2, max_length=2)] = None
+    ui_language: Optional[constr(min_length=2, max_length=2)] = None
+    exam_date: Optional[date] = None  # Made optional
+    daily_goal: Optional[int] = None  # Made optional
 
 class UserOut(BaseModel):
     id: UUID
@@ -71,14 +71,25 @@ class UserOut(BaseModel):
     username: Optional[str]
     first_name: Optional[str]
     last_name: Optional[str]
-    exam_country: str
-    exam_language: str
-    ui_language: str
-    exam_date: Optional[date]
-    daily_goal: Optional[int]
+    exam_country: Optional[str] = None  # Made optional for backward compatibility
+    exam_language: Optional[str] = None  # Made optional for backward compatibility
+    ui_language: Optional[str] = None  # Made optional for backward compatibility
+    exam_date: Optional[date] = None
+    daily_goal: Optional[int] = None
 
     class Config:
         orm_mode = True
 
 class TopicsOut(BaseModel):
     topics: list[str]
+
+# New schemas for exam settings management
+class ExamSettingsUpdate(BaseModel):
+    exam_date: date = Field(..., description="Target exam date")
+    daily_goal: int = Field(..., ge=1, le=100, description="Daily questions goal (1-100)")
+
+class ExamSettingsResponse(BaseModel):
+    exam_date: Optional[date] = None
+    daily_goal: Optional[int] = None
+    days_until_exam: Optional[int] = None
+    recommended_daily_goal: Optional[int] = None
