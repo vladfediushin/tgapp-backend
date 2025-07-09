@@ -1,11 +1,12 @@
 # app/crud/user.py
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from app.models import User, Question, UserProgress
+from sqlalchemy import select, func, and_, or_
+from app.models import User, Question, UserProgress, AnswerHistory
 from app.schemas import UserCreate, UserSettingsUpdate
 from sqlalchemy.exc import NoResultFound
-from datetime import datetime
+from sqlalchemy.orm import joinedload
+from datetime import date, datetime, timedelta
 from uuid import UUID
 from typing import Optional
 
@@ -120,4 +121,81 @@ async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
         "total_questions": total_questions,
         "answered": answered,
         "correct": correct,
+    }
+
+
+async def get_daily_progress(
+    db: AsyncSession, 
+    user_id: UUID, 
+    target_date: date = None
+) -> dict:
+    """
+    Считает количество вопросов, которые были "изучены" за указанный день.
+    
+    Вопрос считается "изученным" если:
+    1. Это первый правильный ответ пользователя на этот вопрос ЗА ДЕНЬ, И
+    2. Либо пользователь никогда не отвечал на этот вопрос правильно раньше,
+       Либо последний ответ до сегодня был неправильным
+    """
+    
+    if target_date is None:
+        target_date = date.today()
+    
+    # Границы дня
+    day_start = datetime.combine(target_date, datetime.min.time())
+    day_end = day_start + timedelta(days=1)
+    
+    user = await get_user_by_id(db, user_id)
+    if not user:
+        return {"questions_mastered_today": 0, "date": target_date}
+    
+    # Получаем все правильные ответы пользователя за указанный день
+    today_correct_answers = await db.execute(
+        select(AnswerHistory.question_id)
+        .where(
+            and_(
+                AnswerHistory.user_id == user_id,
+                AnswerHistory.is_correct == True,
+                AnswerHistory.answered_at >= day_start,
+                AnswerHistory.answered_at < day_end
+            )
+        )
+        .distinct()
+    )
+    today_correct_question_ids = set(row[0] for row in today_correct_answers.fetchall())
+    
+    if not today_correct_question_ids:
+        return {"questions_mastered_today": 0, "date": target_date}
+    
+    # Для каждого вопроса проверяем, считается ли он "новым изученным"
+    mastered_count = 0
+    
+    for question_id in today_correct_question_ids:
+        # Проверяем историю ответов ДО сегодняшнего дня
+        previous_answers = await db.execute(
+            select(AnswerHistory.is_correct)
+            .where(
+                and_(
+                    AnswerHistory.user_id == user_id,
+                    AnswerHistory.question_id == question_id,
+                    AnswerHistory.answered_at < day_start
+                )
+            )
+            .order_by(AnswerHistory.answered_at.desc())
+        )
+        previous_results = previous_answers.fetchall()
+        
+        # Если никогда не отвечал на этот вопрос раньше - считается изученным
+        if not previous_results:
+            mastered_count += 1
+            continue
+            
+        # Если последний ответ до сегодня был неправильным - считается изученным
+        last_previous_result = previous_results[0][0]  # is_correct
+        if not last_previous_result:
+            mastered_count += 1
+    
+    return {
+        "questions_mastered_today": mastered_count,
+        "date": target_date
     }

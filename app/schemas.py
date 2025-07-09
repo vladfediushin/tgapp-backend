@@ -93,3 +93,15 @@ class ExamSettingsResponse(BaseModel):
     daily_goal: Optional[int] = None
     days_until_exam: Optional[int] = None
     recommended_daily_goal: Optional[int] = None
+
+class DailyProgressOut(BaseModel):
+    questions_mastered_today: int
+    date: date
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "questions_mastered_today": 5,
+                "date": "2025-07-09"
+            }
+        }

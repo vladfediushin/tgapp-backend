@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.schemas import (
     QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, 
-    TopicsOut, UserStatsOut, UserSettingsUpdate, ExamSettingsUpdate, ExamSettingsResponse
+    TopicsOut, UserStatsOut, UserSettingsUpdate, ExamSettingsUpdate, ExamSettingsResponse,
+    DailyProgressOut
 )
 from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages, fetch_topics
 from app.crud import user_progress as crud_progress
@@ -195,6 +196,22 @@ async def get_exam_settings(
     except Exception as e:
         logger.error(f"Error getting exam settings: {e}")
         raise HTTPException(status_code=500, detail="Error getting exam settings")
+    
+@users_router.get("/{user_id}/daily-progress", response_model=DailyProgressOut)
+async def get_daily_progress_endpoint(
+    user_id: UUID,
+    target_date: Optional[date] = Query(None, description="Date to check progress for (default: today)"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get daily progress for user - questions mastered today"""
+    try:
+        from app.crud.user import get_daily_progress
+        progress = await get_daily_progress(db, user_id, target_date)
+        return progress
+    except Exception as e:
+        logger.error(f"Error getting daily progress for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Error getting daily progress")
+
 
 topics_router = APIRouter(tags=["topics"])
 
