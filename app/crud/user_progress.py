@@ -5,8 +5,7 @@ from uuid import UUID
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import joinedload
-from app.models import UserProgress
-from app.models import Question
+from app.models import UserProgress, Question, AnswerHistory
 from app.schemas import AnswerSubmit
 
 # Предвычисленная последовательность Фибоначчи на 20 уровней (до ~18 лет)
@@ -32,8 +31,20 @@ async def create_or_update_progress(
 ) -> UserProgress:
     """
     Создаёт или обновляет запись UserProgress при ответе пользователя.
-    Логика repetition_count: +1 при правильном ответе, сброс на 0 при ошибке.
+    Логирует каждый ответ в AnswerHistory.
     """
+    now = datetime.utcnow()
+
+    # 1. Логируем ответ в историю
+    history_entry = AnswerHistory(
+        user_id=data.user_id,
+        question_id=data.question_id,
+        is_correct=data.is_correct,
+        answered_at=now
+    )
+    db.add(history_entry)
+
+    # 2. Получаем текущий прогресс (если есть)
     stmt = (
         select(UserProgress)
         .join(Question, UserProgress.question_id == Question.id)
@@ -45,10 +56,8 @@ async def create_or_update_progress(
     result = await db.execute(stmt)
     prog = result.scalars().first()
 
-    now = datetime.utcnow()
-
+    # 3. Обновляем или создаём прогресс
     if prog:
-        # Обновление существующей записи
         if data.is_correct:
             prog.repetition_count += 1
         else:
@@ -57,31 +66,17 @@ async def create_or_update_progress(
         prog.last_answered_at = now
         prog.next_due_at = calculate_next_due_date(prog.repetition_count)
     else:
-        # Создание новой записи
-        if data.is_correct:
-            reps = 1
-            next_due = calculate_next_due_date(reps)
-            prog = UserProgress(
-                user_id=data.user_id,
-                question_id=data.question_id,
-                is_correct=data.is_correct,
-                repetition_count=reps,
-                last_answered_at=now,
-                next_due_at=next_due,
-                )
-            db.add(prog)
-        else:
-            reps = 0
-            next_due = calculate_next_due_date(reps)
-            prog = UserProgress(
-                user_id=data.user_id,
-                question_id=data.question_id,
-                is_correct=data.is_correct,
-                repetition_count=reps,
-                last_answered_at=now,
-                next_due_at=next_due,
-                )
-            db.add(prog)
+        reps = 1 if data.is_correct else 0
+        next_due = calculate_next_due_date(reps)
+        prog = UserProgress(
+            user_id=data.user_id,
+            question_id=data.question_id,
+            is_correct=data.is_correct,
+            repetition_count=reps,
+            last_answered_at=now,
+            next_due_at=next_due,
+        )
+        db.add(prog)
 
     await db.commit()
     await db.refresh(prog)
