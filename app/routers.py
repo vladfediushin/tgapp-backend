@@ -133,7 +133,6 @@ async def set_exam_settings(
     settings: UserSettingsUpdate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Set user's exam date and daily goal"""
     try:
         # Проверка даты экзамена только если она указана
         if settings.exam_date is not None and settings.exam_date <= date.today():
@@ -149,8 +148,14 @@ async def set_exam_settings(
         recommended_daily_goal = None
         if settings.exam_date is not None:
             days_until_exam = (settings.exam_date - date.today()).days
-            total_questions = 100  # Или из базы
-            recommended_daily_goal = max(1, total_questions // max(1, days_until_exam))
+
+            if updated_user.exam_country and updated_user.exam_language:
+                total_questions = await crud_user.get_total_questions(
+                    db,
+                    updated_user.exam_country,
+                    updated_user.exam_language
+                )
+                recommended_daily_goal = max(1, total_questions // max(1, days_until_exam))
         
         return ExamSettingsResponse(
             exam_date=settings.exam_date,
@@ -180,8 +185,13 @@ async def get_exam_settings(
         
         if user.exam_date:
             days_until_exam = (user.exam_date - date.today()).days
-            total_questions = 100
-            recommended_daily_goal = max(1, total_questions // max(1, days_until_exam))
+            if user.exam_country and user.exam_language:
+                total_questions = await crud_user.get_total_questions(
+                    db,
+                    user.exam_country,
+                    user.exam_language
+                )
+                recommended_daily_goal = max(1, total_questions // max(1, days_until_exam))
         
         return ExamSettingsResponse(
             exam_date=user.exam_date,

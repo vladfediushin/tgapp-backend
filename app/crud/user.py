@@ -83,19 +83,21 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 from app.models import Question, UserProgress
 
+async def get_total_questions(db: AsyncSession, country: str, language: str) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(Question)
+        .where(Question.country == country)
+        .where(Question.language == language)
+    )
+    return (await db.execute(stmt)).scalar_one()
+
 async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
     user = await get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # total вопросов
-    total_q_stmt = (
-        select(func.count())
-        .select_from(Question)
-        .where(Question.country == user.exam_country)
-        .where(Question.language == user.exam_language)
-    )
-    total_questions = (await db.execute(total_q_stmt)).scalar_one()
+    total_questions = await get_total_questions(db, user.exam_country, user.exam_language)
 
     # answered — с JOIN на Question
     answered_stmt = (
