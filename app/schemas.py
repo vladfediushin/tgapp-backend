@@ -62,8 +62,8 @@ class UserSettingsUpdate(BaseModel):
     exam_country: Optional[constr(min_length=2, max_length=2)] = None
     exam_language: Optional[constr(min_length=2, max_length=2)] = None
     ui_language: Optional[constr(min_length=2, max_length=2)] = None
-    exam_date: Optional[date] = None  # Made optional
-    daily_goal: Optional[int] = None  # Made optional
+    exam_date: Optional[date] = None  
+    daily_goal: Optional[int] = None 
 
 class UserOut(BaseModel):
     id: UUID

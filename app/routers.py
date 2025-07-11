@@ -130,29 +130,27 @@ async def patch_user_settings_endpoint(
 @users_router.post("/{user_id}/exam-settings", response_model=ExamSettingsResponse)
 async def set_exam_settings(
     user_id: UUID,
-    settings: ExamSettingsUpdate,
+    settings: UserSettingsUpdate,
     db: AsyncSession = Depends(get_db),
 ):
     """Set user's exam date and daily goal"""
     try:
-        # Validate exam date is in the future
-        if settings.exam_date <= date.today():
+        # Проверка даты экзамена только если она указана
+        if settings.exam_date is not None and settings.exam_date <= date.today():
             raise HTTPException(status_code=400, detail="Exam date must be in the future")
         
-        # Update user with exam settings
-        update_data = UserSettingsUpdate(
-            exam_date=settings.exam_date,
-            daily_goal=settings.daily_goal
-        )
-        
-        updated_user = await crud_user.update_user_settings(db, user_id, update_data)
+        # Обновляем настройки пользователя
+        updated_user = await crud_user.update_user_settings(db, user_id, settings)
         if not updated_user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Calculate days until exam and recommendations
-        days_until_exam = (settings.exam_date - date.today()).days
-        total_questions = 100  # Adjust based on your question database
-        recommended_daily_goal = max(1, total_questions // max(1, days_until_exam))
+        # Рассчитываем дни до экзамена и рекомендуемую цель, если есть дата
+        days_until_exam = None
+        recommended_daily_goal = None
+        if settings.exam_date is not None:
+            days_until_exam = (settings.exam_date - date.today()).days
+            total_questions = 100  # Или из базы
+            recommended_daily_goal = max(1, total_questions // max(1, days_until_exam))
         
         return ExamSettingsResponse(
             exam_date=settings.exam_date,

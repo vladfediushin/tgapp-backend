@@ -49,11 +49,14 @@ async def update_user_settings(
     if not user:
         return None
 
-    for field, value in settings.dict().items():
+    # Обновляем только те поля, которые реально пришли (не None)
+    for field, value in settings.dict(exclude_unset=True, exclude_none=True).items():
         setattr(user, field, value)
+
     await db.commit()
     await db.refresh(user)
     return user
+
 
 async def update_user(db: AsyncSession, user_id: UUID, **fields) -> Optional[User]:
     # Разрешенные поля для обновления
