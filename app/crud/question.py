@@ -48,7 +48,7 @@ async def fetch_questions_for_user(
             )
             .where(UserProgress.user_id == None)
         )
-    elif mode == 'shown_before':
+    elif mode == 'incorrect':
         # Только некорректно отвеченные
         stmt = (
             select(Question)

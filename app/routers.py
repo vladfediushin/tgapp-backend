@@ -35,7 +35,7 @@ async def list_languages(db: AsyncSession = Depends(get_db)):
 @questions_router.get("/", response_model=List[QuestionOut])
 async def get_questions(
     user_id: UUID = Query(..., description="Internal user UUID"),
-    mode: str = Query(..., description="Mode: interval_all, new_only, shown_before, topics"),
+    mode: str = Query(..., description="Mode: interval_all, new_only, incorrect, topics"),
     country: str = Query(..., description="Exam country code"),
     language: str = Query(..., description="Exam language code"),
     topics: Optional[List[str]] = Query(None, alias="topic", description="Optional topic filter"),
