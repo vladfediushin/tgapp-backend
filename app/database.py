@@ -10,7 +10,13 @@ DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql://", "postgresql+as
 
 engine = create_async_engine(DATABASE_URL, 
                              echo=True, 
-                             connect_args={"statement_cache_size": 0},
+                             connect_args={
+                            "statement_cache_size": 0,           
+                            "prepared_statement_cache_size": 0,  
+                            "server_settings": {
+                                "application_name": "fastapi_app",  
+                            }
+                        },
                             )
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 Base = declarative_base()
