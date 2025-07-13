@@ -11,32 +11,47 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql://", "postgresql+asyncpg://")
 
-connect_args = {
-    "statement_cache_size": 0,
-    "prepared_statement_cache_size": 0,
-    "server_settings": {
-        "application_name": "fastapi_app",
+# РАДИКАЛЬНОЕ решение: добавляем параметры прямо в URL
+if "?" in DATABASE_URL:
+    DATABASE_URL += "&statement_cache_size=0&prepared_statement_cache_size=0"
+else:
+    DATABASE_URL += "?statement_cache_size=0&prepared_statement_cache_size=0"
+
+logger.info(f"Database URL with disabled prepared statements: {DATABASE_URL.split('@')[0]}@[MASKED]")
+
+engine = create_async_engine(
+    DATABASE_URL, 
+    echo=True,
+    pool_pre_ping=True,
+    # Отключаем все возможные кэши SQLAlchemy
+    execution_options={
+        "compiled_cache": {},
+        "autocommit": False,
+    },
+    # Дополнительно в connect_args тоже
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+        "command_timeout": 30,  # Таймаут 30 сек
     }
-}
+)
 
-logger.info(f"Creating engine with connect_args: {connect_args}")
-logger.info(f"Database URL (masked): {DATABASE_URL.split('@')[0]}@[MASKED]")
-
-
-engine = create_async_engine(DATABASE_URL, 
-                             echo=True, 
-                             connect_args={
-                            "statement_cache_size": 0,           
-                            "prepared_statement_cache_size": 0,  
-                            "server_settings": {
-                                "application_name": "fastapi_app",  
-                            }
-                        },
-                            )
-AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+AsyncSessionLocal = async_sessionmaker(
+    engine, 
+    expire_on_commit=False,
+    autoflush=True,
+    autocommit=False
+)
 Base = declarative_base()
 
 # dependency
 async def get_db():
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except Exception as e:
+            logger.error(f"Database session error: {e}")
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
