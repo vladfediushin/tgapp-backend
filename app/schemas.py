@@ -26,7 +26,7 @@ class QuestionOut(BaseModel):
     language: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserStatsOut(BaseModel):
     total_questions: int
@@ -43,7 +43,7 @@ class UserProgressOut(BaseModel):
     next_due_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Fixed UserCreate schema - made exam_date and daily_goal optional
 class UserCreate(BaseModel):
@@ -78,7 +78,7 @@ class UserOut(BaseModel):
     daily_goal: Optional[int] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TopicsOut(BaseModel):
     topics: list[str]

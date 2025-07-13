@@ -109,7 +109,7 @@ async def get_user_by_telegram_id_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return UserOut.from_orm(user)
+    return user
 
 @users_router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def patch_user_settings_endpoint(
