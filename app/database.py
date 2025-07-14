@@ -4,7 +4,6 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -20,21 +19,24 @@ else:
 
 logger.info(f"Database URL configured with disabled prepared statements")
 
-# Используем NullPool для serverless окружения
+# Небольшой пул для serverless с быстрым переподключением
 engine = create_async_engine(
     DATABASE_URL, 
     echo=False,  # Отключаем логи в продакшене
-    poolclass=NullPool,  # Без пула соединений для serverless
+    pool_size=1,  # Минимальный пул
+    max_overflow=2,  # Максимум 3 соединения
+    pool_pre_ping=True,  # Проверяем соединения
+    pool_recycle=300,  # Переподключение каждые 5 минут
     # Отключаем все возможные кэши SQLAlchemy
     execution_options={
         "compiled_cache": {},
         "autocommit": False,
     },
-    # Оптимальные таймауты для Vercel
+    # Оптимальные таймауты для serverless
     connect_args={
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
-        "command_timeout": 60,  # Увеличен таймаут для тяжелых запросов
+        "command_timeout": 30,  # Уменьшаем таймаут для быстрых ответов
         "server_settings": {
             "jit": "off",  # Отключаем JIT компиляцию
         }
