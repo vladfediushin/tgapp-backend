@@ -36,7 +36,7 @@ engine = create_async_engine(
     connect_args={
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
-        "command_timeout": 30,  # Уменьшаем таймаут для быстрых ответов
+        "command_timeout": 10,  # 10 секунд - разумный таймаут для мобильного API
         "server_settings": {
             "jit": "off",  # Отключаем JIT компиляцию
         }
