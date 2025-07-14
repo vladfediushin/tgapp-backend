@@ -32,6 +32,34 @@ async def list_countries(db: AsyncSession = Depends(get_db)):
 async def list_languages(db: AsyncSession = Depends(get_db)):
     return await get_distinct_languages(db)
 
+@questions_router.get("/remaining-count")
+async def get_remaining_questions_count(
+    user_id: UUID = Query(..., description="Internal user UUID"),
+    country: str = Query(..., description="Exam country code"),
+    language: str = Query(..., description="Exam language code"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get count of questions user still needs to answer correctly"""
+    try:
+        user = await crud_user.get_user_by_id(db, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        from app.crud.question import get_remaining_questions_count
+        remaining_count = await get_remaining_questions_count(
+            db=db,
+            user_id=user_id,
+            country=country,
+            language=language
+        )
+        
+        return {"remaining_count": remaining_count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting remaining questions count: {e}")
+        raise HTTPException(status_code=500, detail="Error getting remaining questions count")
+
 @questions_router.get("/", response_model=List[QuestionOut])
 async def get_questions(
     user_id: UUID = Query(..., description="Internal user UUID"),

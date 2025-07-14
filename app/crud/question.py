@@ -111,3 +111,32 @@ async def fetch_topics(db: AsyncSession, country: str, language: str) -> list[st
           .where(Question.language == language)
     )
     return [row[0] for row in q.all()]
+
+async def get_remaining_questions_count(
+    db: AsyncSession,
+    user_id: UUID,
+    country: str,
+    language: str,
+) -> int:
+    """Get count of questions user still needs to answer correctly"""
+    country = country.lower()
+    language = language.lower()
+    
+    # Считаем вопросы, которые либо не решались, либо решались неправильно
+    stmt = (
+        select(func.count(Question.id))
+        .outerjoin(
+            UserProgress,
+            (Question.id == UserProgress.question_id)
+            & (UserProgress.user_id == user_id)
+        )
+        .where(Question.country == country)
+        .where(Question.language == language)
+        .where(
+            (UserProgress.is_correct.is_(None))  # Не решались
+            | (UserProgress.is_correct == False)  # Решались неправильно
+        )
+    )
+    
+    result = await db.execute(stmt)
+    return result.scalar() or 0
