@@ -30,13 +30,11 @@ engine = create_async_engine(
     connect_args={
         "prepared_statement_cache_size": 0,  # Полностью отключаем prepared statements
         "statement_cache_size": 0,           # Отключаем statement cache
-        "server_side_cursors": False,        # Отключаем server-side cursors
         "command_timeout": 10,               # 10 секунд таймаут
     },
     
     # Дополнительные настройки
     echo=False,  # Отключаем SQL логирование
-    future=True,
 )
 
 AsyncSessionLocal = async_sessionmaker(
