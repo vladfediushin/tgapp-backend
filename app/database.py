@@ -4,6 +4,7 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -22,19 +23,23 @@ if DATABASE_URL.startswith("postgresql://"):
 elif not DATABASE_URL.startswith("postgresql+asyncpg://"):
     DATABASE_URL = "postgresql+asyncpg://" + DATABASE_URL
 
-# Оптимизированная конфигурация для Supabase Transaction Pooler
+# Добавляем параметры для отключения prepared statements в URL
+if "?" in DATABASE_URL:
+    DATABASE_URL += "&statement_cache_size=0"
+else:
+    DATABASE_URL += "?statement_cache_size=0"
+
+# Радикальное решение для Supabase Transaction Pooler - NullPool без пула соединений
+from sqlalchemy.pool import NullPool
+
 engine = create_async_engine(
-    DATABASE_URL,
-    pool_size=5,          # Постоянных соединений - 5 (согласно договоренности)
-    max_overflow=2,       # Временных добавочных соединений - 2
-    pool_timeout=5,       # БЫСТРЫЙ таймаут - 5 секунд
-    pool_recycle=300,     # 5 минут переиспользования (оптимально для веб-приложения)
-    pool_pre_ping=True,   # Проверяем соединения
+    DATABASE_URL,  # URL уже содержит statement_cache_size=0
+    poolclass=NullPool,       # Отключаем пул соединений полностью
     echo=False,
-    # Отключаем prepared statements для Supabase Transaction Pooler (asyncpg syntax)
+    # Отключаем prepared statements
     connect_args={
-        "statement_cache_size": 0,  # Отключаем prepared statements полностью
-        "command_timeout": 5        # Таймаут команд 5 секунд
+        "statement_cache_size": 0,  # Отключаем prepared statements
+        "command_timeout": 5.0      # Таймаут команд 5 секунд (float)
     }
 )
 

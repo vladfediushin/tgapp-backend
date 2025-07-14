@@ -5,7 +5,7 @@ uvicorn==0.22.0
 
 # Database
 SQLAlchemy==2.0.34
-asyncpg==0.29.0
+asyncpg==0.30.0
 alembic==1.13.1
 
 # Configuration
