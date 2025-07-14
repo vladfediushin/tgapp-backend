@@ -1,7 +1,7 @@
 # app/crud/user.py
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, text
+from sqlalchemy import select, func, and_, or_, text, distinct
 from app.models import User, Question, UserProgress, AnswerHistory
 from app.schemas import UserCreate, UserSettingsUpdate
 from sqlalchemy.exc import NoResultFound
@@ -132,8 +132,7 @@ async def get_daily_progress(
     target_date: date = None
 ) -> dict:
     """
-    Оптимизированный подсчет вопросов, изученных за день.
-    Использует один SQL запрос для максимальной производительности.
+    Простой и быстрый подсчет дневного прогресса.
     """
     
     if target_date is None:
@@ -143,43 +142,31 @@ async def get_daily_progress(
     day_start = datetime.combine(target_date, datetime.min.time())
     day_end = day_start + timedelta(days=1)
     
-    # Оптимизированный запрос - один SQL вместо множественных запросов
-    query = text("""
-        WITH newly_mastered AS (
-            SELECT DISTINCT ah1.question_id
-            FROM answer_history ah1
-            WHERE ah1.user_id = :user_id
-              AND ah1.is_correct = TRUE
-              AND ah1.answered_at >= :start_time
-              AND ah1.answered_at < :end_time
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM answer_history ah2
-                  WHERE ah2.user_id = ah1.user_id
-                    AND ah2.question_id = ah1.question_id
-                    AND ah2.is_correct = TRUE
-                    AND ah2.answered_at < :start_time
-              )
-        )
-        SELECT
-            COALESCE(u.daily_goal, 30) AS daily_goal,
-            (SELECT COUNT(*) FROM newly_mastered) AS questions_mastered_today
-        FROM users u 
-        WHERE u.id = :user_id
-    """)
-
-    result = await db.execute(query, {
-        "user_id": user_id,
-        "start_time": day_start,
-        "end_time": day_end
-    })
+    # Получаем пользователя с дневной целью
+    user_result = await db.execute(
+        select(User.daily_goal).where(User.id == user_id)
+    )
+    user_data = user_result.first()
     
-    row = result.fetchone()
-    if not row:
+    if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    daily_goal = user_data.daily_goal or 30
+    
+    # Простой подсчет новых правильных ответов за день
+    progress_result = await db.execute(
+        select(func.count(distinct(UserProgress.question_id)))
+        .where(
+            UserProgress.user_id == user_id,
+            UserProgress.first_correct_at >= day_start,
+            UserProgress.first_correct_at < day_end
+        )
+    )
+    
+    questions_mastered_today = progress_result.scalar() or 0
 
     return {
-        "questions_mastered_today": row.questions_mastered_today,
+        "questions_mastered_today": questions_mastered_today,
         "date": target_date,
-        "daily_goal": row.daily_goal
+        "daily_goal": daily_goal
     }

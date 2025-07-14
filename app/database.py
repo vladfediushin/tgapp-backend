@@ -4,44 +4,26 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
-
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql://", "postgresql+asyncpg://")
 
-# Отключаем prepared statements для стабильности Transaction Pooler
-if "?" in DATABASE_URL:
-    DATABASE_URL += "&statement_cache_size=0&prepared_statement_cache_size=0"
-else:
-    DATABASE_URL += "?statement_cache_size=0&prepared_statement_cache_size=0"
-
-logger.info(f"Database URL configured for Transaction Pooler compatibility")
-
-# Окончательная конфигурация для Supabase Transaction Pooler
+# Оптимизированная конфигурация для Supabase
 engine = create_async_engine(
     DATABASE_URL,
-    # Используем NullPool для Transaction Pooler
-    poolclass=NullPool,
-    
-    # Полностью отключаем все виды кеширования
-    connect_args={
-        "prepared_statement_cache_size": 0,  # Полностью отключаем prepared statements
-        "statement_cache_size": 0,           # Отключаем statement cache
-        "command_timeout": 10,               # 10 секунд таймаут
-    },
-    
-    # Дополнительные настройки
-    echo=False,  # Отключаем SQL логирование
+    pool_size=1,          # Минимальный размер пула для экономии соединений
+    max_overflow=2,       # Небольшое количество дополнительных соединений  
+    pool_timeout=5,       # БЫСТРЫЙ таймаут - 5 секунд
+    pool_recycle=300,     # 5 минут переиспользования (оптимально для веб-приложения)
+    pool_pre_ping=True,   # Проверяем соединения
+    echo=False
 )
 
 AsyncSessionLocal = async_sessionmaker(
     engine, 
-    expire_on_commit=False,
-    autoflush=False,  # Отключаем автофлуш для оптимизации
-    autocommit=False
+    expire_on_commit=False
 )
 Base = declarative_base()
 
