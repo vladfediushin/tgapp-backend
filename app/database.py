@@ -4,6 +4,7 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -11,36 +12,31 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql://", "postgresql+asyncpg://")
 
-# Отключаем prepared statements для стабильности Vercel Postgres
+# Отключаем prepared statements для стабильности Transaction Pooler
 if "?" in DATABASE_URL:
     DATABASE_URL += "&statement_cache_size=0&prepared_statement_cache_size=0"
 else:
     DATABASE_URL += "?statement_cache_size=0&prepared_statement_cache_size=0"
 
-logger.info(f"Database URL configured with disabled prepared statements")
+logger.info(f"Database URL configured for Transaction Pooler compatibility")
 
-# Небольшой пул для serverless с быстрым переподключением
+# Окончательная конфигурация для Supabase Transaction Pooler
 engine = create_async_engine(
-    DATABASE_URL, 
-    echo=False,  # Отключаем логи в продакшене
-    pool_size=1,  # Минимальный пул
-    max_overflow=2,  # Максимум 3 соединения
-    pool_pre_ping=True,  # Проверяем соединения
-    pool_recycle=300,  # Переподключение каждые 5 минут
-    # Отключаем все возможные кэши SQLAlchemy
-    execution_options={
-        "compiled_cache": {},
-        "autocommit": False,
-    },
-    # Оптимальные таймауты для serverless
+    DATABASE_URL,
+    # Используем NullPool для Transaction Pooler
+    poolclass=NullPool,
+    
+    # Полностью отключаем все виды кеширования
     connect_args={
-        "statement_cache_size": 0,
-        "prepared_statement_cache_size": 0,
-        "command_timeout": 10,  # 10 секунд - разумный таймаут для мобильного API
-        "server_settings": {
-            "jit": "off",  # Отключаем JIT компиляцию
-        }
-    }
+        "prepared_statement_cache_size": 0,  # Полностью отключаем prepared statements
+        "statement_cache_size": 0,           # Отключаем statement cache
+        "server_side_cursors": False,        # Отключаем server-side cursors
+        "command_timeout": 10,               # 10 секунд таймаут
+    },
+    
+    # Дополнительные настройки
+    echo=False,  # Отключаем SQL логирование
+    future=True,
 )
 
 AsyncSessionLocal = async_sessionmaker(

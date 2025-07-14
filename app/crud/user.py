@@ -133,7 +133,7 @@ async def get_daily_progress(
 ) -> dict:
     """
     Оптимизированный подсчет вопросов, изученных за день.
-    Включает получение daily_goal из профиля пользователя.
+    Использует один SQL запрос для максимальной производительности.
     """
     
     if target_date is None:
@@ -143,71 +143,45 @@ async def get_daily_progress(
     day_start = datetime.combine(target_date, datetime.min.time())
     day_end = day_start + timedelta(days=1)
     
-    # Получаем пользователя и его daily_goal
-    user = await get_user_by_id(db, user_id)
-    if not user:
-        return {
-            "questions_mastered_today": 0, 
-            "date": target_date,
-            "daily_goal": 30  # дефолтное значение
-        }
+    # Оптимизированный запрос - один SQL вместо множественных запросов
+    query = text("""
+        SELECT
+            COALESCE(u.daily_goal, 30) AS daily_goal,
+            COUNT(*) AS questions_mastered_today,
+            :target_date AS date
+        FROM (
+            SELECT DISTINCT ah1.question_id
+            FROM answer_history ah1
+            WHERE ah1.user_id = :user_id
+              AND ah1.is_correct = TRUE
+              AND ah1.answered_at >= :start_time
+              AND ah1.answered_at < :end_time
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM answer_history ah2
+                  WHERE ah2.user_id = ah1.user_id
+                    AND ah2.question_id = ah1.question_id
+                    AND ah2.is_correct = TRUE
+                    AND ah2.answered_at < :start_time
+              )
+        ) newly_mastered
+        CROSS JOIN users u 
+        WHERE u.id = :user_id
+    """)
+
+    result = await db.execute(query, {
+        "user_id": user_id,
+        "target_date": target_date.isoformat(),
+        "start_time": day_start,
+        "end_time": day_end
+    })
     
-    # Оптимизированный запрос с использованием window functions
-    query = """
-    WITH question_progress AS (
-        SELECT 
-            question_id,
-            is_correct,
-            answered_at,
-            ROW_NUMBER() OVER (
-                PARTITION BY question_id 
-                ORDER BY answered_at DESC
-            ) as rn_overall,
-            ROW_NUMBER() OVER (
-                PARTITION BY question_id 
-                ORDER BY answered_at DESC
-            ) FILTER (WHERE answered_at < :day_start) as rn_before_today,
-            CASE 
-                WHEN answered_at >= :day_start AND answered_at < :day_end 
-                THEN ROW_NUMBER() OVER (
-                    PARTITION BY question_id 
-                    ORDER BY answered_at ASC
-                ) FILTER (WHERE answered_at >= :day_start AND answered_at < :day_end AND is_correct = true)
-                ELSE NULL
-            END as first_correct_today
-        FROM answer_history 
-        WHERE user_id = :user_id
-    ),
-    mastered_today AS (
-        SELECT DISTINCT question_id
-        FROM question_progress
-        WHERE first_correct_today = 1  -- Первый правильный ответ сегодня
-        AND (
-            rn_before_today IS NULL  -- Никогда не отвечал раньше
-            OR EXISTS (  -- Или последний ответ до сегодня был неправильным
-                SELECT 1 FROM question_progress qp2 
-                WHERE qp2.question_id = question_progress.question_id 
-                AND qp2.rn_before_today = 1 
-                AND qp2.is_correct = false
-            )
-        )
-    )
-    SELECT COUNT(*) as mastered_count FROM mastered_today
-    """
-    
-    result = await db.execute(
-        text(query),
-        {
-            "user_id": user_id,
-            "day_start": day_start,
-            "day_end": day_end
-        }
-    )
-    
-    mastered_count = result.scalar() or 0
-    
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+
     return {
-        "questions_mastered_today": mastered_count,
+        "questions_mastered_today": row.questions_mastered_today,
         "date": target_date,
-        "daily_goal": user.daily_goal or 30  # Возвращаем daily_goal пользователя
+        "daily_goal": row.daily_goal
     }
