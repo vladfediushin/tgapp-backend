@@ -145,11 +145,7 @@ async def get_daily_progress(
     
     # Оптимизированный запрос - один SQL вместо множественных запросов
     query = text("""
-        SELECT
-            COALESCE(u.daily_goal, 30) AS daily_goal,
-            COUNT(*) AS questions_mastered_today,
-            :target_date AS date
-        FROM (
+        WITH newly_mastered AS (
             SELECT DISTINCT ah1.question_id
             FROM answer_history ah1
             WHERE ah1.user_id = :user_id
@@ -164,14 +160,16 @@ async def get_daily_progress(
                     AND ah2.is_correct = TRUE
                     AND ah2.answered_at < :start_time
               )
-        ) newly_mastered
-        CROSS JOIN users u 
+        )
+        SELECT
+            COALESCE(u.daily_goal, 30) AS daily_goal,
+            (SELECT COUNT(*) FROM newly_mastered) AS questions_mastered_today
+        FROM users u 
         WHERE u.id = :user_id
     """)
 
     result = await db.execute(query, {
         "user_id": user_id,
-        "target_date": target_date.isoformat(),
         "start_time": day_start,
         "end_time": day_end
     })
