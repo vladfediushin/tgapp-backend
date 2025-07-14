@@ -31,11 +31,10 @@ engine = create_async_engine(
     pool_recycle=300,     # 5 минут переиспользования (оптимально для веб-приложения)
     pool_pre_ping=True,   # Проверяем соединения
     echo=False,
-    # Отключаем prepared statements для Supabase Transaction Pooler
+    # Отключаем prepared statements для Supabase Transaction Pooler (asyncpg syntax)
     connect_args={
-        "server_settings": {
-            "statement_cache_size": "0"
-        }
+        "statement_cache_size": 0,  # Отключаем prepared statements полностью
+        "command_timeout": 5        # Таймаут команд 5 секунд
     }
 )
 
