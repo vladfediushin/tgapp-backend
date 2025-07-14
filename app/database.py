@@ -30,7 +30,13 @@ engine = create_async_engine(
     pool_timeout=5,       # БЫСТРЫЙ таймаут - 5 секунд
     pool_recycle=300,     # 5 минут переиспользования (оптимально для веб-приложения)
     pool_pre_ping=True,   # Проверяем соединения
-    echo=False
+    echo=False,
+    # Отключаем prepared statements для Supabase Transaction Pooler
+    connect_args={
+        "server_settings": {
+            "statement_cache_size": "0"
+        }
+    }
 )
 
 AsyncSessionLocal = async_sessionmaker(

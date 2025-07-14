@@ -158,8 +158,9 @@ async def get_daily_progress(
         select(func.count(distinct(UserProgress.question_id)))
         .where(
             UserProgress.user_id == user_id,
-            UserProgress.first_correct_at >= day_start,
-            UserProgress.first_correct_at < day_end
+            UserProgress.is_correct == True,
+            UserProgress.last_answered_at >= day_start,
+            UserProgress.last_answered_at < day_end
         )
     )
     
