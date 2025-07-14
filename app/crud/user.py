@@ -133,7 +133,7 @@ async def get_daily_progress(
 ) -> dict:
     """
     Оптимизированный подсчет вопросов, изученных за день.
-    Использует один запрос вместо N+1.
+    Включает получение daily_goal из профиля пользователя.
     """
     
     if target_date is None:
@@ -143,12 +143,16 @@ async def get_daily_progress(
     day_start = datetime.combine(target_date, datetime.min.time())
     day_end = day_start + timedelta(days=1)
     
+    # Получаем пользователя и его daily_goal
     user = await get_user_by_id(db, user_id)
     if not user:
-        return {"questions_mastered_today": 0, "date": target_date}
+        return {
+            "questions_mastered_today": 0, 
+            "date": target_date,
+            "daily_goal": 30  # дефолтное значение
+        }
     
     # Оптимизированный запрос с использованием window functions
-    # Получаем все ответы пользователя, упорядоченные по времени
     query = """
     WITH question_progress AS (
         SELECT 
@@ -204,5 +208,6 @@ async def get_daily_progress(
     
     return {
         "questions_mastered_today": mastered_count,
-        "date": target_date
+        "date": target_date,
+        "daily_goal": user.daily_goal or 30  # Возвращаем daily_goal пользователя
     }
