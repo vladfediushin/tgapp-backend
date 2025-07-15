@@ -1,3 +1,46 @@
+from datetime import timedelta
+# Endpoint: ответы по дням для streak и статистики
+from sqlalchemy import text
+
+@users_router.get("/{user_id}/answers-by-day")
+async def get_answers_by_day(
+    user_id: UUID,
+    days: int = Query(7, ge=1, le=30, description="Сколько дней вернуть"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Возвращает массив по последним N дням: дата, total, correct, incorrect"""
+    today = date.today()
+    days_list = [(today - timedelta(days=i)) for i in range(1, days+1)]
+    days_list.reverse()  # от старых к новым
+
+    # SQL: сгруппировать по дням
+    sql = text("""
+        SELECT DATE(answered_at) AS answer_date,
+               COUNT(*) AS total_answers,
+               COUNT(*) FILTER (WHERE is_correct) AS correct_answers,
+               COUNT(*) FILTER (WHERE NOT is_correct) AS incorrect_answers
+        FROM answer_history
+        WHERE user_id = :user_id
+          AND answered_at >= :start_date
+        GROUP BY answer_date
+    """)
+    result = await db.execute(sql, {"user_id": str(user_id), "start_date": days_list[0]})
+    rows = {str(row.answer_date): {
+        "total_answers": row.total_answers,
+        "correct_answers": row.correct_answers,
+        "incorrect_answers": row.incorrect_answers
+    } for row in result}
+
+    # Собираем массив с нулями для пропущенных дней
+    out = []
+    for d in days_list:
+        d_str = d.isoformat()
+        day_data = rows.get(d_str, {"total_answers": 0, "correct_answers": 0, "incorrect_answers": 0})
+        out.append({
+            "date": d_str,
+            **day_data
+        })
+    return out
 # app/routers.py - Fixed version with exam settings
 import logging
 from datetime import date, datetime
