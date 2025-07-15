@@ -1,6 +1,7 @@
 # backend/app/main.py
 import logging
 from fastapi import FastAPI, Request
+import time
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
@@ -26,25 +27,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Middleware для логирования всех запросов
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    # Логируем метод и URL
     logger.info(f">>> {request.method} {request.url}")
-
-    # Логируем тело запроса (если есть)
     body = await request.body()
     if body:
         try:
             logger.info(f"    Body: {body.decode('utf-8')}")
         except Exception:
             logger.info(f"    Body (binary): {body}")
-
-    # Прокидываем запрос дальше
     response: Response = await call_next(request)
-
-    # Логируем статус ответа
     logger.info(f"<<< Response {response.status_code} for {request.method} {request.url.path}")
+    return response
+
+# Middleware для отслеживания времени обработки запроса
+@app.middleware("http")
+async def timing_middleware(request: Request, call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    logger.info(f"{request.method} {request.url.path} took {process_time:.3f}s")
     return response
 
 @app.get("/")
