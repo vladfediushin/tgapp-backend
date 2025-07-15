@@ -1,10 +1,23 @@
-from datetime import timedelta
-# Endpoint: ответы по дням для streak и статистики
+import logging
+from datetime import date, datetime, timedelta
 from sqlalchemy import text
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Body
 from typing import List, Optional, Dict
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.schemas import (
+    QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, 
+    TopicsOut, UserStatsOut, UserSettingsUpdate, ExamSettingsUpdate, ExamSettingsResponse,
+    DailyProgressOut
+)
+from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages, fetch_topics
+from app.crud import user_progress as crud_progress
+from app.crud import user as crud_user
+
+logger = logging.getLogger("api")
+PREFIX = ""
 
 users_router = APIRouter(
     prefix="/users",
@@ -50,31 +63,15 @@ async def get_answers_by_day(
             **day_data
         })
     return out
-# app/routers.py - Fixed version with exam settings
-import logging
-from datetime import date, datetime
-logger = logging.getLogger("api")
-
-from fastapi import APIRouter, Depends, Query, HTTPException, status, Body
-from typing import List, Optional, Dict
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.database import get_db
-from app.schemas import (
-    QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, 
-    TopicsOut, UserStatsOut, UserSettingsUpdate, ExamSettingsUpdate, ExamSettingsResponse,
-    DailyProgressOut
-)
-from app.crud.question import fetch_questions_for_user, get_distinct_countries, get_distinct_languages, fetch_topics
-from app.crud import user_progress as crud_progress
-from app.crud import user as crud_user
-
-PREFIX = ""
 
 questions_router = APIRouter(
     prefix=f"{PREFIX}/questions",
     tags=["questions"])
+
+user_progress_router = APIRouter(
+    prefix=f"{PREFIX}/user_progress",
+    tags=["user_progress"],
+)
 
 @questions_router.get("/countries", response_model=List[str])
 async def list_countries(db: AsyncSession = Depends(get_db)):
@@ -135,11 +132,6 @@ async def get_questions(
         batch_size=batch_size,
         topics=topics,
     )
-
-user_progress_router = APIRouter(
-    prefix=f"{PREFIX}/user_progress",
-    tags=["user_progress"],
-)
 
 @user_progress_router.post("/submit_answer", response_model=UserProgressOut, status_code=status.HTTP_201_CREATED)
 async def save_user_progress(
