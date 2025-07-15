@@ -1,6 +1,15 @@
 from datetime import timedelta
 # Endpoint: ответы по дням для streak и статистики
 from sqlalchemy import text
+from fastapi import APIRouter, Depends, Query, HTTPException, status, Body
+from typing import List, Optional, Dict
+from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+
+users_router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+)
 
 @users_router.get("/{user_id}/answers-by-day")
 async def get_answers_by_day(
@@ -146,10 +155,6 @@ async def save_user_progress(
         logger.error(f"[save_user_progress] Unhandled exception:\n{tb}")
         raise HTTPException(status_code=500, detail="Internal server error, see logs for details")
 
-users_router = APIRouter(
-    prefix=f"{PREFIX}/users",
-    tags=["users"],
-)
 
 @users_router.get("/{user_id}/stats", response_model=UserStatsOut, status_code=status.HTTP_200_OK)
 async def user_stats_endpoint(user_id: UUID, db: AsyncSession = Depends(get_db)):
