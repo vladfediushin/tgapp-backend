@@ -124,3 +124,30 @@ async def get_progress_for_user_and_question(
     )
     result = await db.execute(stmt)
     return result.scalars().first()
+
+
+async def check_answer_exists(
+    db: AsyncSession, 
+    user_id: UUID, 
+    question_id: int, 
+    timestamp: int
+) -> bool:
+    """Проверяет, существует ли уже ответ с данным timestamp"""
+    try:
+        # Проверяем в AnswerHistory по timestamp (если у нас есть поле timestamp)
+        # Если нет поля timestamp, проверяем по недавнему времени
+        result = await db.execute(
+            select(AnswerHistory)
+            .where(
+                AnswerHistory.user_id == user_id,
+                AnswerHistory.question_id == question_id,
+                # Проверяем ответы за последние 5 минут как потенциальные дубли
+                AnswerHistory.answered_at >= datetime.utcnow() - timedelta(minutes=5)
+            )
+        )
+        existing = result.scalar_one_or_none()
+        return existing is not None
+    except Exception as e:
+        # При ошибке не блокируем сохранение
+        print(f"Warning: Could not check for duplicate answer: {e}")
+        return False

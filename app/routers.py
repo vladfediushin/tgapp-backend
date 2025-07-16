@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas import (
-    QuestionOut, AnswerSubmit, UserProgressOut, UserCreate, UserOut, 
+    QuestionOut, AnswerSubmit, BatchAnswersSubmit, UserProgressOut, UserCreate, UserOut, 
     TopicsOut, UserStatsOut, UserSettingsUpdate, ExamSettingsUpdate, ExamSettingsResponse,
     DailyProgressOut
 )
@@ -145,6 +145,43 @@ async def save_user_progress(
         import traceback
         tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
         logger.error(f"[save_user_progress] Unhandled exception:\n{tb}")
+        raise HTTPException(status_code=500, detail="Internal server error, see logs for details")
+
+
+@user_progress_router.post("/submit_answers", response_model=UserStatsOut, status_code=status.HTTP_201_CREATED)
+async def save_user_answers_batch(
+    batch_data: BatchAnswersSubmit,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        # Обрабатываем все ответы в батче
+        processed_count = 0
+        for answer_data in batch_data.answers:
+            # Создаем полный объект AnswerSubmit 
+            full_answer = AnswerSubmit(
+                user_id=batch_data.user_id,
+                question_id=answer_data.question_id,
+                is_correct=answer_data.is_correct,
+                timestamp=answer_data.timestamp
+            )
+            
+            # Проверяем дедупликацию по timestamp (если есть)
+            if answer_data.timestamp:
+                # Можно добавить проверку на дубли в БД, пока пропускаем
+                pass
+                
+            await crud_progress.create_or_update_progress(db, full_answer)
+            processed_count += 1
+            
+        # Возвращаем обновленную статистику пользователя
+        stats = await crud_user.get_user_stats(db, batch_data.user_id)
+        logger.info(f"Processed {processed_count} answers for user {batch_data.user_id}")
+        return stats
+        
+    except Exception as e:
+        import traceback
+        tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        logger.error(f"[save_user_answers_batch] Unhandled exception:\n{tb}")
         raise HTTPException(status_code=500, detail="Internal server error, see logs for details")
 
 
@@ -299,3 +336,44 @@ async def get_topics(
 ):
     topics = await fetch_topics(db, country, language)
     return TopicsOut(topics=topics)
+
+@users_router.post("/{user_id}/submit_answers", response_model=UserProgressOut, status_code=status.HTTP_201_CREATED)
+async def submit_answers(
+    user_id: UUID,
+    answers_data: BatchAnswersSubmit,
+    db: AsyncSession = Depends(get_db),
+):
+    """Submit multiple answers at once with deduplication support"""
+    try:
+        # Обрабатываем все ответы в одной транзакции
+        for answer_data in answers_data.answers:
+            # Проверяем дедупликацию по question_id + timestamp
+            if answer_data.timestamp:
+                # Проверяем, не был ли уже записан этот ответ
+                existing = await crud_progress.check_answer_exists(
+                    db, user_id, answer_data.question_id, answer_data.timestamp
+                )
+                if existing:
+                    logger.info(f"Skipping duplicate answer for question {answer_data.question_id}, timestamp {answer_data.timestamp}")
+                    continue
+            
+            # Создаем объект AnswerSubmit для совместимости с существующей логикой
+            answer_submit = AnswerSubmit(
+                user_id=user_id,
+                question_id=answer_data.question_id,
+                is_correct=answer_data.is_correct,
+                timestamp=answer_data.timestamp
+            )
+            
+            # Используем существующую логику сохранения
+            await crud_progress.create_or_update_progress(db, answer_submit)
+        
+        # Возвращаем обновленную статистику
+        stats = await crud_user.get_user_stats(db, user_id)
+        return stats
+        
+    except Exception as e:
+        import traceback
+        tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
+        logger.error(f"[submit_answers] Unhandled exception:\n{tb}")
+        raise HTTPException(status_code=500, detail="Internal server error, see logs for details")

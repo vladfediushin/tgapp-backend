@@ -1,6 +1,6 @@
 # app/schemas.py - Fixed version
 from pydantic import BaseModel, Field, constr
-from typing import Any, Optional
+from typing import Any, Optional, List
 from uuid import UUID
 from datetime import datetime, date
 
@@ -8,13 +8,33 @@ class AnswerSubmit(BaseModel):
     user_id: UUID
     question_id: int
     is_correct: bool
+    timestamp: Optional[int] = None  # Добавляем timestamp для дедупликации
 
     class Config:
         schema_extra = {
             "example": {
                 "user_id": "e759a0f2-e50c-407b-a263-a0d5f7ed5a6f",
                 "question_id": 123,
-                "is_correct": True
+                "is_correct": True,
+                "timestamp": 1640995200000
+            }
+        }
+
+class BatchAnswersSubmit(BaseModel):
+    user_id: UUID
+    answers: List[AnswerSubmit]
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "user_id": "e759a0f2-e50c-407b-a263-a0d5f7ed5a6f", 
+                "answers": [
+                    {
+                        "question_id": 123,
+                        "is_correct": True,
+                        "timestamp": 1640995200000
+                    }
+                ]
             }
         }
 
