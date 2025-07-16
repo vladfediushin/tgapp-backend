@@ -192,19 +192,36 @@ async def check_answer_exists(
 ) -> bool:
     """Проверяет, существует ли уже ответ с данным timestamp"""
     try:
-        # Проверяем в AnswerHistory по timestamp (если у нас есть поле timestamp)
-        # Если нет поля timestamp, проверяем по недавнему времени
-        result = await db.execute(
-            select(AnswerHistory)
-            .where(
-                AnswerHistory.user_id == user_id,
-                AnswerHistory.question_id == question_id,
-                # Проверяем ответы за последние 5 минут как потенциальные дубли
-                AnswerHistory.answered_at >= datetime.utcnow() - timedelta(minutes=5)
+        # Конвертируем timestamp из миллисекунд в datetime
+        if timestamp:
+            target_time = datetime.fromtimestamp(timestamp / 1000)  # timestamp приходит в миллисекундах
+            
+            # Проверяем точное совпадение в пределах 1 секунды (для учета погрешности)
+            time_window = timedelta(seconds=1)
+            result = await db.execute(
+                select(AnswerHistory)
+                .where(
+                    AnswerHistory.user_id == user_id,
+                    AnswerHistory.question_id == question_id,
+                    AnswerHistory.answered_at >= target_time - time_window,
+                    AnswerHistory.answered_at <= target_time + time_window
+                )
             )
-        )
-        existing = result.scalar_one_or_none()
-        return existing is not None
+            existing = result.scalar_one_or_none()
+            return existing is not None
+        else:
+            # Если timestamp не передан, используем старую логику (проверка за последние 5 минут)
+            result = await db.execute(
+                select(AnswerHistory)
+                .where(
+                    AnswerHistory.user_id == user_id,
+                    AnswerHistory.question_id == question_id,
+                    AnswerHistory.answered_at >= datetime.utcnow() - timedelta(minutes=5)
+                )
+            )
+            existing = result.scalar_one_or_none()
+            return existing is not None
+            
     except Exception as e:
         # При ошибке не блокируем сохранение
         print(f"Warning: Could not check for duplicate answer: {e}")
