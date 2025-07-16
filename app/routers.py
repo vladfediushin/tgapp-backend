@@ -337,7 +337,7 @@ async def get_topics(
     topics = await fetch_topics(db, country, language)
     return TopicsOut(topics=topics)
 
-@users_router.post("/{user_id}/submit_answers", response_model=UserProgressOut, status_code=status.HTTP_201_CREATED)
+@users_router.post("/{user_id}/submit_answers", response_model=UserStatsOut, status_code=status.HTTP_201_CREATED)
 async def submit_answers(
     user_id: UUID,
     answers_data: BatchAnswersSubmit,
@@ -346,9 +346,14 @@ async def submit_answers(
     """Submit multiple answers at once with deduplication support"""
     try:
         processed_answers = 0
+        skipped_answers = 0
+        
+        logger.info(f"🚀 Starting batch submission for user {user_id}, {len(answers_data.answers)} answers received")
         
         # Обрабатываем все ответы в одной транзакции
-        for answer_data in answers_data.answers:
+        for i, answer_data in enumerate(answers_data.answers):
+            logger.info(f"📝 Processing answer {i+1}/{len(answers_data.answers)}: question_id={answer_data.question_id}, is_correct={answer_data.is_correct}, timestamp={answer_data.timestamp}")
+            
             # Проверяем дедупликацию по question_id + timestamp
             if answer_data.timestamp:
                 # Проверяем, не был ли уже записан этот ответ
@@ -356,7 +361,8 @@ async def submit_answers(
                     db, user_id, answer_data.question_id, answer_data.timestamp
                 )
                 if existing:
-                    logger.info(f"Skipping duplicate answer for question {answer_data.question_id}, timestamp {answer_data.timestamp}")
+                    logger.info(f"⏭️ Skipping duplicate answer for question {answer_data.question_id}, timestamp {answer_data.timestamp}")
+                    skipped_answers += 1
                     continue
             
             # Создаем объект AnswerSubmit для совместимости с существующей логикой
@@ -368,15 +374,18 @@ async def submit_answers(
             )
             
             # Используем batch версию без commit внутри
+            logger.info(f"💾 Calling create_or_update_progress_batch for question {answer_data.question_id}")
             await crud_progress.create_or_update_progress_batch(db, answer_submit)
             processed_answers += 1
         
         # Делаем общий commit для всех ответов
+        logger.info(f"🔄 Committing transaction: {processed_answers} processed, {skipped_answers} skipped")
         await db.commit()
         logger.info(f"✅ Successfully committed {processed_answers} answers for user {user_id}")
         
         # Возвращаем обновленную статистику
         stats = await crud_user.get_user_stats(db, user_id)
+        logger.info(f"📊 Returning stats: {stats}")
         return stats
         
     except Exception as e:
