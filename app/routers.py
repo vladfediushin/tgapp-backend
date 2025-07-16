@@ -345,6 +345,8 @@ async def submit_answers(
 ):
     """Submit multiple answers at once with deduplication support"""
     try:
+        processed_answers = 0
+        
         # Обрабатываем все ответы в одной транзакции
         for answer_data in answers_data.answers:
             # Проверяем дедупликацию по question_id + timestamp
@@ -365,15 +367,22 @@ async def submit_answers(
                 timestamp=answer_data.timestamp
             )
             
-            # Используем существующую логику сохранения
-            await crud_progress.create_or_update_progress(db, answer_submit)
+            # Используем batch версию без commit внутри
+            await crud_progress.create_or_update_progress_batch(db, answer_submit)
+            processed_answers += 1
+        
+        # Делаем общий commit для всех ответов
+        await db.commit()
+        logger.info(f"✅ Successfully committed {processed_answers} answers for user {user_id}")
         
         # Возвращаем обновленную статистику
         stats = await crud_user.get_user_stats(db, user_id)
         return stats
         
     except Exception as e:
+        # Откатываем транзакцию при ошибке
+        await db.rollback()
         import traceback
         tb = "".join(traceback.format_exception(type(e), e, e.__traceback__))
-        logger.error(f"[submit_answers] Unhandled exception:\n{tb}")
+        logger.error(f"[submit_answers] Unhandled exception, rolling back:\n{tb}")
         raise HTTPException(status_code=500, detail="Internal server error, see logs for details")
