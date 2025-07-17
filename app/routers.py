@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas import (
-    QuestionOut, AnswerSubmit, BatchAnswersSubmit, UserProgressOut, UserCreate, UserOut, 
+    QuestionOut, AnswerSubmit, BatchAnswersSubmit, BatchAnswerItem, UserProgressOut, UserCreate, UserOut, 
     TopicsOut, UserStatsOut, UserSettingsUpdate, ExamSettingsUpdate, ExamSettingsResponse,
     DailyProgressOut
 )
@@ -366,8 +366,9 @@ async def submit_answers(
                     continue
             
             # Создаем объект AnswerSubmit для совместимости с существующей логикой
+            # user_id берем из URL параметра /{user_id}/submit_answers
             answer_submit = AnswerSubmit(
-                user_id=user_id,
+                user_id=user_id,  # user_id из URL параметра
                 question_id=answer_data.question_id,
                 is_correct=answer_data.is_correct,
                 timestamp=answer_data.timestamp

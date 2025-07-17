@@ -5,29 +5,25 @@ from uuid import UUID
 from datetime import datetime, date
 
 class AnswerSubmit(BaseModel):
+    """Схема для отдельного ответа с user_id (для внутреннего использования)"""
     user_id: UUID
     question_id: int
     is_correct: bool
-    timestamp: Optional[int] = None  # Добавляем timestamp для дедупликации
+    timestamp: Optional[int] = None
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "user_id": "e759a0f2-e50c-407b-a263-a0d5f7ed5a6f",
-                "question_id": 123,
-                "is_correct": True,
-                "timestamp": 1640995200000
-            }
-        }
+class BatchAnswerItem(BaseModel):
+    """Ответ в batch запросе без user_id (user_id берется из URL)"""
+    question_id: int
+    is_correct: bool
+    timestamp: Optional[int] = None
 
 class BatchAnswersSubmit(BaseModel):
-    user_id: UUID
-    answers: List[AnswerSubmit]
+    """Batch запрос ответов - user_id берется из URL параметра"""
+    answers: List[BatchAnswerItem]
     
     class Config:
         schema_extra = {
             "example": {
-                "user_id": "e759a0f2-e50c-407b-a263-a0d5f7ed5a6f", 
                 "answers": [
                     {
                         "question_id": 123,
