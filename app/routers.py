@@ -354,14 +354,17 @@ async def submit_answers(
         for i, answer_data in enumerate(answers_data.answers):
             logger.info(f"📝 Processing answer {i+1}/{len(answers_data.answers)}: question_id={answer_data.question_id}, is_correct={answer_data.is_correct}, timestamp={answer_data.timestamp}")
             
+            # Обеспечиваем что timestamp не None (если None, используем текущее время)
+            timestamp = answer_data.timestamp or int(datetime.now().timestamp() * 1000)
+            
             # Проверяем дедупликацию по question_id + timestamp
-            if answer_data.timestamp:
+            if timestamp:
                 # Проверяем, не был ли уже записан этот ответ
                 existing = await crud_progress.check_answer_exists(
-                    db, user_id, answer_data.question_id, answer_data.timestamp
+                    db, user_id, answer_data.question_id, timestamp
                 )
                 if existing:
-                    logger.info(f"⏭️ Skipping duplicate answer for question {answer_data.question_id}, timestamp {answer_data.timestamp}")
+                    logger.info(f"⏭️ Skipping duplicate answer for question {answer_data.question_id}, timestamp {timestamp}")
                     skipped_answers += 1
                     continue
             
@@ -371,7 +374,7 @@ async def submit_answers(
                 user_id=user_id,  # user_id из URL параметра
                 question_id=answer_data.question_id,
                 is_correct=answer_data.is_correct,
-                timestamp=answer_data.timestamp
+                timestamp=timestamp  # Гарантированно int, не None
             )
             
             # Используем batch версию без commit внутри
