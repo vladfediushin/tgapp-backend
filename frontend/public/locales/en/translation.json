@@ -1,0 +1,162 @@
+{
+  "buttons": {
+    "next": "Next",
+    "back": "Back",
+    "backToHome": "Home",
+    "topics": "Topics ({{count}})"
+  },
+  "authorize": {
+    "checking": "Checking user data…",
+    "greeting": "Hello, {{name}}! Please select your country and language:",
+    "welcome": "Welcome, {{userName}}!",
+    "intro": "Let's set up your profile for driving theory learning",
+    "examCountryLabel": "Exam country",
+    "examLanguageLabel": "Exam language",
+    "uiLanguageLabel": "UI language",
+    "selectPlaceholder": "— select —",
+    "submit": "Save and continue",
+    "label": {
+      "examCountry": "Exam country",
+      "examLanguage": "Exam language",
+      "uiLanguage": "UI language"
+    },
+    "placeholder": {
+      "selectCountry": "— select country —",
+      "selectLanguage": "— select language —"
+    },
+    "button": {
+      "next": "Next"
+    },
+    "footer": {
+      "info": "These settings can be changed later in your profile"
+    },
+    "examSettings": {
+      "title": "Almost ready, {{userName}}!",
+      "description": "Would you like to set your exam date and daily goal? This will help the app recommend an optimal study pace. These settings are optional — you can skip them and add them later.",
+      "skip": "Skip (set up later)"
+    },
+    "error": {
+      "requiredFields": "Please fill in all required fields",
+      "telegramData": "Failed to get Telegram data",
+      "checkUser": "Error checking user",
+      "createUser": "Error creating user"
+    }
+  },
+  "home": {
+    "greeting": "Hello, {{name}}!",
+    "stats": "Completed: {{answered}} of {{total}}, correct: {{correct}}",
+    "loadingStats": "Loading stats...",
+    "startRevision": "Start revision",
+    "profile": "Profile",
+    "settings": "Settings",
+    "statistics": "Statistics",
+    "todayProgress": "Today's Progress",
+    "questionsMasteredToday": "Questions mastered today",
+    "progressMessage": {
+      "start": "Time to start practicing!",
+      "keepGoing": "Good work, keep it up!",
+      "excellent": "Excellent progress!"
+    },
+    "streak": {
+      "days_0": "{{count}} days",
+      "days_1": "{{count}} day",
+      "days_other": "{{count}} days"
+    }
+  },
+  "modeSelect": {
+    "title": "Select revision mode",
+    "topics": "Topics ({{count}})",
+    "topicsAll": "all",
+    "modes": {
+      "interval_all": "All questions",
+      "new_only": "New only",
+      "incorrect": "Only incorrect"
+    },
+    "batchSize": "Batch size",
+    "next": "Next",
+    "back": "Back",
+    "modal": {
+      "title": "Choose topics",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "profile": {
+    "loading": "Loading profile...",
+    "title": "User Profile",
+    "settings": "Settings",
+    "examCountryLabel": "Exam country",
+    "examLanguageLabel": "Exam language",
+    "uiLanguageLabel": "UI language",
+    "statsTitle": "Statistics",
+    "totalQuestions": "Total questions",
+    "answered": "Answered",
+    "correct": "Correct answers",
+    "incorrect": "Incorrect answers",
+    "unanswered": "Unanswered questions",
+    "dueCount": "Ready for review: {{dueCount}}",
+    "back": "Back",
+    "dailyStreak": "Daily Streak",
+    "dailyGoal": "Daily Goal",
+    "goal": "Goal",
+    "examDate": "Exam Date",
+    "editProfile": "Edit Profile",
+    "editSettings": "Edit Settings",
+    "advancedSettings": "Advanced Settings"
+  },
+  "repeat": {
+    "loading": "Loading questions...",
+    "statsInitial": "Total in queue (initial): {{initialCount}}",
+    "statsLeft": "Remaining in queue: {{questionsLeft}}",
+    "statsCorrect": "Correct answers: {{correctCount}}",
+    "statsIncorrect": "Incorrect answers: {{incorrectCount}}",
+    "question": "Question",
+    "next": "Next",
+    "back": "Back"
+  },
+  "results": {
+    "sessionComplete": "Session complete ✅",
+    "answeredCount": "You answered {{count}} questions.",
+    "correctCount": "Correct answers: {{correct}}",
+    "incorrectCount": "Incorrect answers: {{incorrect}}",
+    "goHome": "Go home",
+    "noQuestions": "No questions available for this mode."
+  },
+  "topics": {
+    "title": "Choose a topic",
+    "list": {
+      "Знаки": "Signs",
+      "Светофоры": "Traffic lights",
+      "Разметка": "Markings",
+      "Ситуации": "Scenarios",
+      "Парковка": "Parking"
+    },
+    "goHome": "Home"
+  },
+  "settings": {
+    "title": "Advanced Settings",
+    "uiLanguageLabel": "Interface Language"
+  },
+  "examSettings": {
+    "title": "Exam Settings"
+  },
+  "fsrs": {
+    "difficultyPrompt": "Rate the difficulty of this question",
+    "difficulty": {
+      "easy": "Easy",
+      "normal": "Normal", 
+      "hard": "Hard",
+      "veryHard": "Very Hard"
+    },
+    "settings": {
+      "enableFSRS": "Enable FSRS (Spaced Repetition)",
+      "autoRating": "Automatic difficulty rating",
+      "description": "FSRS optimizes review schedules based on memory research"
+    },
+    "stats": {
+      "retention": "Retention Rate",
+      "avgDifficulty": "Average Difficulty",
+      "totalReviews": "Total Reviews"
+    }
+  }
+}

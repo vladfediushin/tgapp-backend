@@ -1,0 +1,174 @@
+{
+  "buttons": {
+    "next": "Далее",
+    "back": "Назад",
+    "backToHome": "На главную",
+    "topics": "Темы ({{count}})"
+  },
+  "authorize": {
+    "checking": "Проверка данных пользователя…",
+    "greeting": "Привет, {{name}}! Укажи, пожалуйста, страну и язык:",
+    "welcome": "Добро пожаловать, {{userName}}!",
+    "intro": "Давайте настроим ваш профиль для изучения теории вождения",
+    "examCountryLabel": "Страна экзамена",
+    "examLanguageLabel": "Язык экзамена",
+    "uiLanguageLabel": "Язык интерфейса",
+    "selectPlaceholder": "— выберите —",
+    "submit": "Сохранить и продолжить",
+    "label": {
+      "examCountry": "Страна экзамена",
+      "examLanguage": "Язык экзамена",
+      "uiLanguage": "Язык интерфейса"
+    },
+    "placeholder": {
+      "selectCountry": "— выберите страну —",
+      "selectLanguage": "— выберите язык —"
+    },
+    "button": {
+      "next": "Далее"
+    },
+    "footer": {
+      "info": "Эти настройки можно изменить позже в профиле"
+    },
+    "examSettings": {
+      "title": "Почти готово, {{userName}}!",
+      "description": "Хотите настроить дату экзамена и ежедневную цель? Это поможет приложению рекомендовать оптимальный темп изучения. Эти настройки необязательны — вы можете пропустить их и добавить позже.",
+      "skip": "Пропустить (настроить позже)"
+    },
+    "error": {
+      "requiredFields": "Заполните обязательные поля",
+      "telegramData": "Не удалось получить данные Telegram",
+      "checkUser": "Ошибка проверки пользователя",
+      "createUser": "Ошибка создания пользователя"
+        }
+    },
+    "home": {
+    "greeting": "Привет, {{name}}!",
+    "stats": "Пройдено: {{answered}} из {{total}}, верных: {{correct}}",
+    "loadingStats": "Загрузка статистики...",
+    "startRevision": "Начать повторение",
+    "profile": "Профиль",
+    "settings": "Настройки",
+    "statistics": "Статистика",
+    "todayProgress": "Прогресс за сегодня",
+    "questionsMasteredToday": "Отвечено правильно сегодня",
+    "progressMessage": {
+      "start": "Пора начать повторение!",
+      "keepGoing": "Молодец, поднажми!",
+      "excellent": "Отлично продвигаешься!"
+    },
+    "streak": {
+      "days_0": "{{count}} дней",
+      "days_1": "{{count}} день", 
+      "days_2": "{{count}} дня",
+      "days_5": "{{count}} дней"
+    }
+  },
+  "modeSelect": {
+    "title": "Выбери режим повторения",
+    "subtitle": "Выберите подходящий режим для изучения",
+    "topics": "Темы ({{count}})",
+    "topicsAll": "все темы",
+    "topicsSelected": "тем выбрано",
+    "modes": {
+      "interval_all": "Все вопросы",
+      "interval_all_desc": "Изучение всех доступных вопросов",
+      "new_only": "Только новые",
+      "new_only_desc": "Вопросы, на которые вы ещё не отвечали",
+      "incorrect": "Работа над ошибками",
+      "incorrect_desc": "Повторение неправильно отвеченных вопросов"
+    },
+    "batchSize": "Количество вопросов",
+    "next": "Начать изучение",
+    "back": "Назад",
+    "modal": {
+      "title": "Выберите темы",
+      "cancel": "Отмена",
+      "confirm": "Подтвердить"
+    }
+  },
+  "profile": {
+    "loading": "Загрузка профиля...",
+    "title": "Профиль пользователя",
+    "settings": "Настройки",
+    "examCountryLabel": "Страна экзамена",
+    "examLanguageLabel": "Язык экзамена",
+    "uiLanguageLabel": "Язык интерфейса",
+    "statsTitle": "Статистика",
+    "totalQuestions": "Всего вопросов",
+    "answered": "Отвечено",
+    "correct": "Верных ответов",
+    "incorrect": "Ошибочных ответов",
+    "unanswered": "Неотвеченных вопросов",
+    "dueCount": "Готовы к повторению: {{dueCount}}",
+    "back": "Назад",
+    "dailyStreak": "Ежедневная активность",
+    "dailyGoal": "Ежедневная цель",
+    "goal": "Цель",
+    "examDate": "Дата экзамена",
+    "editProfile": "Редактировать профиль",
+    "editSettings": "Редактировать настройки",
+    "advancedSettings": "Дополнительные настройки"
+  },
+  "repeat": {
+    "loading": "Загрузка вопросов...",
+    "statsInitial": "Всего вопросов в очереди (изначально): {{initialCount}}",
+    "statsLeft": "Осталось вопросов в очереди: {{questionsLeft}}",
+    "statsCorrect": "Правильно отвечено: {{correctCount}}",
+    "statsIncorrect": "Неправильно отвечено: {{incorrectCount}}",
+    "question": "Вопрос",
+    "next": "Далее",
+    "back": "Назад"
+  },
+  "results": {
+    "sessionComplete": "Сессия завершена ✅",
+    "answeredCount": "Вы ответили на {{count}} вопросов.",
+    "correctCount": "Правильных ответов: {{correct}}",
+    "incorrectCount": "Неправильных ответов: {{incorrect}}",
+    "excellent": "Отлично!",
+    "good": "Хорошо!",
+    "fair": "Неплохо",
+    "needsImprovement": "Нужно больше практики",
+    "goHome": "На главную",
+    "noQuestions": "Нет доступных вопросов для этого режима."
+  },
+  "topics": {
+    "title": "Выберите тему",
+    "subtitle": "Изучайте вопросы по конкретным темам",
+    "back": "Назад",
+    "clickToStart": "Нажмите, чтобы начать",
+    "list": {
+      "Знаки": "Знаки",
+      "Светофоры": "Светофоры",
+      "Разметка": "Разметка",
+      "Ситуации": "Ситуации",
+      "Парковка": "Парковка"
+    }
+  },
+  "settings": {
+    "title": "Дополнительные настройки",
+    "uiLanguageLabel": "Язык интерфейса"
+  },
+  "examSettings": {
+    "title": "Настройки экзамена"
+  },
+  "fsrs": {
+    "difficultyPrompt": "Оцените сложность этого вопроса",
+    "difficulty": {
+      "easy": "Легко",
+      "normal": "Нормально", 
+      "hard": "Сложно",
+      "veryHard": "Очень сложно"
+    },
+    "settings": {
+      "enableFSRS": "Включить FSRS (интервальные повторения)",
+      "autoRating": "Автоматическая оценка сложности",
+      "description": "FSRS оптимизирует расписание повторений на основе исследований памяти"
+    },
+    "stats": {
+      "retention": "Процент запоминания",
+      "avgDifficulty": "Средняя сложность",
+      "totalReviews": "Всего повторений"
+    }
+  }
+}
