@@ -1,13 +1,22 @@
 import axios, { AxiosResponse } from 'axios'
 
-// создаём экземпляр axios с базовым URL из .env
+// API URL с fallback для продакшена
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+                    import.meta.env.VITE_API_URL || 
+                    (import.meta.env.PROD 
+                      ? 'https://tgapp-fsrs-backend.onrender.com'
+                      : 'http://localhost:8000');
+
+// создаём экземпляр axios с базовым URL
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 8000, // 8 секунд таймаут - должно быть достаточно
+  baseURL: API_BASE_URL,
+  timeout: 10000, // 10 секунд для продакшена (Render может быть медленнее)
   headers: {
     'Content-Type': 'application/json',
   },
 })
+
+console.log('API Base URL:', API_BASE_URL); // Для отладки
 
 // Interceptor для обработки ошибок и retry
 api.interceptors.response.use(

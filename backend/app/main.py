@@ -14,16 +14,19 @@ logger = logging.getLogger("api")
 
 app = FastAPI(docs_url="/docs", redoc_url="/redoc")
 
-# CORS
+# CORS - настройки для продакшена
 origins = [
     "https://tgapp-frontend.vercel.app",
+    "https://tgapp-fsrs.vercel.app",  # Новый домен для FSRS версии
+    "http://localhost:3000",  # Для локальной разработки
+    "http://localhost:5173",  # Vite dev server
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,  # Используем список конкретных доменов
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
