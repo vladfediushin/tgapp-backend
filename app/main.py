@@ -21,7 +21,13 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://www.drivingtest.space",
+        "tgapp-frontend.vercel.app",
+        "tgapp-frontend-vladfediushins-projects.vercel.app",
+        "https://tgapp-frontend-git-main-vladfediushins-projects.vercel.app/",
+        "https://tgapp-frontend-dick4advs-vladfediushins-projects.vercel.app/"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
