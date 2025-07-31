@@ -36,10 +36,13 @@ engine = create_async_engine(
     DATABASE_URL,  # URL уже содержит statement_cache_size=0
     poolclass=NullPool,       # Отключаем пул соединений полностью
     echo=False,
-    # Отключаем prepared statements
+    # Отключаем prepared statements и увеличиваем таймауты
     connect_args={
         "statement_cache_size": 0,  # Отключаем prepared statements
-        "command_timeout": 5.0      # Таймаут команд 5 секунд (float)
+        "command_timeout": 30.0,    # Увеличиваем таймаут команд до 30 секунд
+        "server_settings": {
+            "application_name": "tgapp_backend",
+        }
     }
 )
 

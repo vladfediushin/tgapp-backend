@@ -262,10 +262,16 @@ async def set_exam_settings(
         # Рассчитываем дни до экзамена и рекомендуемую цель, если есть дата
         days_until_exam = None
         recommended_daily_goal = None
-        if settings.exam_date is not None:
-            days_until_exam = (settings.exam_date - date.today()).days
+        
+        # Получаем exam_date либо из обновления, либо из существующего пользователя
+        final_exam_date = settings.exam_date if settings.exam_date is not None else updated_user.exam_date
+        
+        if final_exam_date is not None:
+            days_until_exam = (final_exam_date - date.today()).days
 
-            if updated_user.exam_country and updated_user.exam_language:
+            # Рассчитываем recommended_daily_goal только если обновляется exam_date
+            # Если меняется только daily_goal, пропускаем медленный запрос
+            if settings.exam_date is not None and updated_user.exam_country and updated_user.exam_language:
                 total_questions = await crud_user.get_total_questions(
                     db,
                     updated_user.exam_country,
@@ -274,8 +280,8 @@ async def set_exam_settings(
                 recommended_daily_goal = max(1, total_questions // max(1, days_until_exam))
         
         return ExamSettingsResponse(
-            exam_date=settings.exam_date,
-            daily_goal=settings.daily_goal,
+            exam_date=final_exam_date,
+            daily_goal=settings.daily_goal if settings.daily_goal is not None else updated_user.daily_goal,
             days_until_exam=days_until_exam,
             recommended_daily_goal=recommended_daily_goal
         )

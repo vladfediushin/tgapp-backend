@@ -79,15 +79,27 @@ async def update_user(db: AsyncSession, user_id: UUID, **fields) -> Optional[Use
     await db.refresh(user)
     return user
 
+# Simple in-memory cache for total questions count
+_questions_count_cache = {}
 
 async def get_total_questions(db: AsyncSession, country: str, language: str) -> int:
+    # Check cache first
+    cache_key = f"{country}_{language}"
+    if cache_key in _questions_count_cache:
+        return _questions_count_cache[cache_key]
+    
+    # If not in cache, query database
     stmt = (
         select(func.count())
         .select_from(Question)
         .where(Question.country == country)
         .where(Question.language == language)
     )
-    return (await db.execute(stmt)).scalar_one()
+    count = (await db.execute(stmt)).scalar_one()
+    
+    # Cache the result
+    _questions_count_cache[cache_key] = count
+    return count
 
 async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
     user = await get_user_by_id(db, user_id)
