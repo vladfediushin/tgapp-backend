@@ -12,9 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'a
 
 # Указание на app для импорта базы
 from app.database import Base
-from app.models.question import Question
-from app.models.user import User
-from app.models.user_progress import UserProgress
+from app.models import Question, User, UserProgress, AnswerHistory
 
 # Получаем DATABASE_URL и преобразуем async → sync
 DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql+asyncpg://", "postgresql://")

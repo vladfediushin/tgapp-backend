@@ -216,6 +216,17 @@ async def get_user_by_telegram_id_endpoint(
         )
     return user
 
+@users_router.get("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
+async def get_user_by_id_endpoint(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get user by UUID"""
+    user = await crud_user.get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 @users_router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def patch_user_settings_endpoint(
     user_id: UUID,
