@@ -28,18 +28,16 @@ if "?" in DATABASE_URL:
 else:
     DATABASE_URL += "?statement_cache_size=0"
 
-# Оптимальная настройка для Supabase с connection pooling
+# Оптимальная настройка для Supabase Connection Pooler
+# Порт 5432 = Session Mode (persistent connections)
+# Порт 6543 = Transaction Mode (serverless/transient connections)
+# Supabase управляет server-side pooling в обоих режимах
 engine = create_async_engine(
     DATABASE_URL,  # URL уже содержит statement_cache_size=0
-    # Используем стандартный QueuePool вместо NullPool
-    pool_size=5,              # Размер основного пула соединений
-    max_overflow=10,          # Максимум дополнительных соединений
-    pool_pre_ping=True,       # Проверка соединений перед использованием
-    pool_recycle=3600,        # Пересоздание соединений каждый час
-    pool_timeout=30,          # Таймаут получения соединения из пула
+    # Для Supabase Pooler можно использовать минимальные настройки client-side
     echo=False,
     connect_args={
-        "statement_cache_size": 0,  # Отключаем prepared statements для Supabase
+        "statement_cache_size": 0,  # Обязательно для Supabase (любой режим)
         "command_timeout": 30.0,    # Таймаут команд
         "server_settings": {
             "application_name": "tgapp_backend",
@@ -53,47 +51,54 @@ AsyncSessionLocal = async_sessionmaker(
 )
 Base = declarative_base()
 
-# Функция для мониторинга состояния connection pool
+# Функция для мониторинга состояния connection pool (адаптирована для Supabase)
 def get_pool_status():
-    """Возвращает статистику пула соединений для мониторинга"""
+    """
+    Возвращает статистику пула соединений для мониторинга.
+    Для Supabase Pooler показывает доступную информацию.
+    """
     pool = engine.pool
     try:
+        # Определяем режим Supabase по URL
+        url_str = str(engine.url) if hasattr(engine, 'url') else ""
+        if ":5432" in url_str:
+            supabase_mode = "session_mode"
+        elif ":6543" in url_str:
+            supabase_mode = "transaction_mode"
+        else:
+            supabase_mode = "unknown"
+            
         stats = {
             "pool_class": pool.__class__.__name__,
+            "supabase_mode": supabase_mode,
+            "note": f"Using Supabase Supavisor in {supabase_mode}. Server-side pooling is managed by Supabase."
         }
         
-        # Безопасно получаем доступные методы
-        safe_methods = ['size', 'checkedin', 'checkedout', 'overflow']
+        # Пытаемся получить client-side статистику, если доступна
+        client_stats = {}
+        safe_methods = ['size', 'checkedin', 'checkedout']
+        
         for method in safe_methods:
             try:
                 if hasattr(pool, method):
-                    stats[method] = getattr(pool, method)()
-                else:
-                    stats[method] = "not_available"
-            except Exception as e:
-                stats[method] = f"error: {str(e)}"
+                    client_stats[method] = getattr(pool, method)()
+            except Exception:
+                client_stats[method] = "not_available"
         
-        # Проверяем invalid отдельно, так как его часто нет в async пулах
-        try:
-            if hasattr(pool, 'invalid'):
-                stats["invalid"] = pool.invalid()
-            else:
-                stats["invalid"] = "not_supported_by_async_pool"
-        except Exception as e:
-            stats["invalid"] = f"error: {str(e)}"
-            
-        # Добавляем информацию о настройках пула
-        if hasattr(pool, '_pool'):
-            stats["internal_pool_size"] = len(pool._pool._pool) if hasattr(pool._pool, '_pool') else "unknown"
+        if client_stats:
+            stats["client_side_pool"] = client_stats
+        
+        # Добавляем информацию о engine
+        stats["engine_echo"] = engine.echo
         
         return stats
+        
     except Exception as e:
-        # Если вообще ничего не получается, возвращаем минимальную информацию
         return {
-            "pool_class": pool.__class__.__name__ if hasattr(pool, '__class__') else "unknown",
-            "status": "error",
+            "pool_class": "unknown",
+            "status": "error", 
             "error": str(e),
-            "message": "Failed to retrieve detailed pool statistics"
+            "note": "Error getting pool status - this is normal for some Supabase configurations"
         }
 
 # Dependency для получения сессии БД с улучшенной обработкой ошибок
