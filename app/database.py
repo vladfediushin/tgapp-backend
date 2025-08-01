@@ -57,13 +57,31 @@ Base = declarative_base()
 def get_pool_status():
     """Возвращает статистику пула соединений для мониторинга"""
     pool = engine.pool
-    return {
-        "pool_size": pool.size(),
-        "checked_in": pool.checkedin(),
-        "checked_out": pool.checkedout(),
-        "overflow": pool.overflow(),
-        "invalid": pool.invalid(),
-    }
+    try:
+        stats = {
+            "pool_size": pool.size(),
+            "checked_in": pool.checkedin(),
+            "checked_out": pool.checkedout(),
+            "overflow": pool.overflow(),
+        }
+        
+        # Для AsyncAdaptedQueuePool метод invalid() может отсутствовать
+        try:
+            stats["invalid"] = pool.invalid()
+        except AttributeError:
+            stats["invalid"] = "not_available"
+            
+        # Добавляем дополнительную информацию о пуле
+        stats["pool_class"] = pool.__class__.__name__
+        
+        return stats
+    except Exception as e:
+        # Если не можем получить детальную статистику, возвращаем базовую информацию
+        return {
+            "pool_class": pool.__class__.__name__,
+            "status": "error",
+            "error": str(e)
+        }
 
 # Dependency для получения сессии БД с улучшенной обработкой ошибок
 async def get_db():
