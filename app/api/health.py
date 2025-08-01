@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from ..database import get_db
+from ..database import get_db, get_pool_status
 
 logger = logging.getLogger(__name__)
 
@@ -41,3 +41,25 @@ async def simple_health_check():
     Простой health check без проверки БД
     """
     return {"status": "healthy", "message": "API is running"}
+
+@router.get("/health/pool")
+async def pool_status():
+    """
+    Мониторинг состояния connection pool
+    """
+    try:
+        pool_stats = get_pool_status()
+        return {
+            "status": "healthy",
+            "pool_stats": pool_stats,
+            "message": "Connection pool status retrieved"
+        }
+    except Exception as e:
+        logger.error(f"Error getting pool status: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status": "error",
+                "message": f"Failed to get pool status: {str(e)}"
+            }
+        )

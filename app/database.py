@@ -4,7 +4,6 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -29,17 +28,19 @@ if "?" in DATABASE_URL:
 else:
     DATABASE_URL += "?statement_cache_size=0"
 
-# Радикальное решение для Supabase Transaction Pooler - NullPool без пула соединений
-from sqlalchemy.pool import NullPool
-
+# Оптимальная настройка для Supabase с connection pooling
 engine = create_async_engine(
     DATABASE_URL,  # URL уже содержит statement_cache_size=0
-    poolclass=NullPool,       # Отключаем пул соединений полностью
+    # Используем стандартный QueuePool вместо NullPool
+    pool_size=5,              # Размер основного пула соединений
+    max_overflow=10,          # Максимум дополнительных соединений
+    pool_pre_ping=True,       # Проверка соединений перед использованием
+    pool_recycle=3600,        # Пересоздание соединений каждый час
+    pool_timeout=30,          # Таймаут получения соединения из пула
     echo=False,
-    # Отключаем prepared statements и увеличиваем таймауты
     connect_args={
-        "statement_cache_size": 0,  # Отключаем prepared statements
-        "command_timeout": 30.0,    # Увеличиваем таймаут команд до 30 секунд
+        "statement_cache_size": 0,  # Отключаем prepared statements для Supabase
+        "command_timeout": 30.0,    # Таймаут команд
         "server_settings": {
             "application_name": "tgapp_backend",
         }
@@ -52,7 +53,19 @@ AsyncSessionLocal = async_sessionmaker(
 )
 Base = declarative_base()
 
-# Dependency для получения сессии БД
+# Функция для мониторинга состояния connection pool
+def get_pool_status():
+    """Возвращает статистику пула соединений для мониторинга"""
+    pool = engine.pool
+    return {
+        "pool_size": pool.size(),
+        "checked_in": pool.checkedin(),
+        "checked_out": pool.checkedout(),
+        "overflow": pool.overflow(),
+        "invalid": pool.invalid(),
+    }
+
+# Dependency для получения сессии БД с улучшенной обработкой ошибок
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
@@ -61,5 +74,3 @@ async def get_db():
             logger.error(f"Database session error: {e}")
             await session.rollback()
             raise
-        finally:
-            await session.close()
