@@ -59,28 +59,41 @@ def get_pool_status():
     pool = engine.pool
     try:
         stats = {
-            "pool_size": pool.size(),
-            "checked_in": pool.checkedin(),
-            "checked_out": pool.checkedout(),
-            "overflow": pool.overflow(),
+            "pool_class": pool.__class__.__name__,
         }
         
-        # Для AsyncAdaptedQueuePool метод invalid() может отсутствовать
+        # Безопасно получаем доступные методы
+        safe_methods = ['size', 'checkedin', 'checkedout', 'overflow']
+        for method in safe_methods:
+            try:
+                if hasattr(pool, method):
+                    stats[method] = getattr(pool, method)()
+                else:
+                    stats[method] = "not_available"
+            except Exception as e:
+                stats[method] = f"error: {str(e)}"
+        
+        # Проверяем invalid отдельно, так как его часто нет в async пулах
         try:
-            stats["invalid"] = pool.invalid()
-        except AttributeError:
-            stats["invalid"] = "not_available"
+            if hasattr(pool, 'invalid'):
+                stats["invalid"] = pool.invalid()
+            else:
+                stats["invalid"] = "not_supported_by_async_pool"
+        except Exception as e:
+            stats["invalid"] = f"error: {str(e)}"
             
-        # Добавляем дополнительную информацию о пуле
-        stats["pool_class"] = pool.__class__.__name__
+        # Добавляем информацию о настройках пула
+        if hasattr(pool, '_pool'):
+            stats["internal_pool_size"] = len(pool._pool._pool) if hasattr(pool._pool, '_pool') else "unknown"
         
         return stats
     except Exception as e:
-        # Если не можем получить детальную статистику, возвращаем базовую информацию
+        # Если вообще ничего не получается, возвращаем минимальную информацию
         return {
-            "pool_class": pool.__class__.__name__,
+            "pool_class": pool.__class__.__name__ if hasattr(pool, '__class__') else "unknown",
             "status": "error",
-            "error": str(e)
+            "error": str(e),
+            "message": "Failed to retrieve detailed pool statistics"
         }
 
 # Dependency для получения сессии БД с улучшенной обработкой ошибок
