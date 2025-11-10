@@ -5,7 +5,7 @@ import logging
 from typing import Dict
 
 from aiogram import Router, F, types
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from sqlalchemy import select
 
@@ -113,3 +113,17 @@ async def handle_feedback_message(message: types.Message) -> None:
     )
     await message.bot.send_message(ADMIN_USER_ID, admin_text)
     await message.answer(get_message(lang, "feedback_thanks"))
+
+
+@router.message(Command("about"))
+async def command_about(message: types.Message) -> None:
+    lang = await resolve_locale(message.from_user)
+    await message.answer(get_message(lang, "about_text"))
+
+
+@router.message(Command("feedback"))
+async def command_feedback(message: types.Message) -> None:
+    user_id = message.from_user.id
+    lang = await resolve_locale(message.from_user)
+    feedback_waiting[user_id] = lang
+    await message.answer(get_message(lang, "feedback_prompt"))

@@ -17,3 +17,11 @@ def get_message(lang: str, key: str, **kwargs) -> str:
 
 def supported_languages() -> set[str]:
     return set(TRANSLATIONS.keys())
+
+def command_descriptions(lang: str) -> list[tuple[str, str]]:
+    lang = lang if lang in TRANSLATIONS else DEFAULT_LANG
+    return [
+        ('start', TRANSLATIONS[lang].get('start_prompt', 'Start')),
+        ('about', TRANSLATIONS[lang].get('command_about', 'About the app')),
+        ('feedback', TRANSLATIONS[lang].get('command_feedback', 'Send feedback')),
+    ]

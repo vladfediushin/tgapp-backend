@@ -9,5 +9,7 @@ MESSAGES = {
     ),
     "feedback_prompt": "Write a feedback message and send it here.",
     "feedback_thanks": "Thanks, your feedback was delivered.",
-    "admin_feedback": "\U0001F4E9 Feedback from {profile}\nID: {user_id}\n\n{message}"
+    "admin_feedback": "\U0001F4E9 Feedback from {profile}\nID: {user_id}\n\n{message}",
+    "command_about": "About the app",
+    "command_feedback": "Send feedback"
 }

@@ -5,9 +5,10 @@ import time
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
-from aiogram.types import MenuButtonWebApp, Update, WebAppInfo
+from aiogram.types import BotCommand, MenuButtonWebApp, Update, WebAppInfo
 
 from bot.wiring import get_bot_and_dispatcher
+from bot.locales import TRANSLATIONS
 from app.routers import users_router, questions_router, user_progress_router, topics_router
 from app.api.health import router as health_router
 from .tg_security import check_init_data, extract_user
@@ -79,6 +80,12 @@ async def init_bot():
     bot, dp = get_bot_and_dispatcher()
     app.state.bot = bot
     app.state.dp = dp
+    commands = [
+        BotCommand(command="start", description="Start / open menu"),
+        BotCommand(command="about", description="About the app"),
+        BotCommand(command="feedback", description="Send feedback"),
+    ]
+    await bot.set_my_commands(commands)
     logger.info("🤖 Telegram bot initialized")
 
 

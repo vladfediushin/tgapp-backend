@@ -9,5 +9,7 @@ MESSAGES = {
     ),
     "feedback_prompt": "Напишите сообщение обратной связи и отправьте здесь.",
     "feedback_thanks": "Спасибо, сообщение доставлено.",
-    "admin_feedback": "\U0001F4E9 Сообщение от {profile}\nID: {user_id}\n\n{message}"
+    "admin_feedback": "\U0001F4E9 Сообщение от {profile}\nID: {user_id}\n\n{message}",
+    "command_about": "О приложении",
+    "command_feedback": "Оставить отзыв"
 }
