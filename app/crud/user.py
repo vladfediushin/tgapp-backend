@@ -131,10 +131,25 @@ async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
     )
     correct = (await db.execute(correct_stmt)).scalar_one()
 
+    box_counts = [0] * 10
+    box_stmt = (
+        select(UserProgress.repetition_count, func.count())
+        .select_from(UserProgress)
+        .join(Question, UserProgress.question_id == Question.id)
+        .where(UserProgress.user_id == user_id)
+        .where(Question.country == user.exam_country)
+        .where(Question.language == user.exam_language)
+        .group_by(UserProgress.repetition_count)
+    )
+    for repetition_count, count in (await db.execute(box_stmt)).all():
+        idx = min(max(repetition_count or 0, 0), len(box_counts) - 1)
+        box_counts[idx] += count
+
     return {
         "total_questions": total_questions,
         "answered": answered,
         "correct": correct,
+        "box_counts": box_counts,
     }
 
 

@@ -48,6 +48,7 @@ class UserStatsOut(BaseModel):
     total_questions: int
     answered: int
     correct: int
+    box_counts: List[int] = []
 
 class UserProgressOut(BaseModel):
     id: UUID
