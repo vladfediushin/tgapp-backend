@@ -145,6 +145,9 @@ async def get_user_stats(db: AsyncSession, user_id: UUID) -> dict:
         idx = min(max(repetition_count or 0, 0), len(box_counts) - 1)
         box_counts[idx] += count
 
+    # Treat unseen questions as part of box 1
+    box_counts[0] += max(total_questions - answered, 0)
+
     return {
         "total_questions": total_questions,
         "answered": answered,
