@@ -2,7 +2,7 @@
 fastapi==0.115.12
 pydantic==2.11.5
 uvicorn[standard]==0.22.0
-aiogram>=3.6.0
+aiogram==3.22.0
 
 # Database
 SQLAlchemy==2.0.34
