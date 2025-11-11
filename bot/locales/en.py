@@ -26,7 +26,7 @@ MESSAGES = {
         "screen use default settings (batch size of 30; all topics included).\n\n"
         "<b>Where do the questions come from?</b>\n"
         "• All questions are sourced from the Armenian Police’s official website and are based on "
-        "the latest revision published in April 2022. <a href='https://www.police.am/%D5%...'>View questions</a>\n"
+        "the latest revision published in April 2022. <a href='https://www.police.am/%D5%BE%D5%A1%D6%80%D5%B8%D6%80%D5%A4%D5%A1%D5%AF%D5%A1%D5%B6-%D5%A5%D5%BE-%D5%A5%D6%80%D5%A9%D5%A5%D5%BE%D5%A5%D5%AF%D5%B8%D6%82%D5%A9%D5%B5%D5%A1%D5%B6-%D5%BF%D5%A5%D5%B2%D5%A5%D5%AF%D5%A1%D5%BF%D5%B8%D6%82/the-list-of-driving-theory-test-questions.html'>View questions</a>\n"
         "• In their original form, the questions are organized into 10 topic-based groups. In the "
         "mini app, each group’s PDF is parsed into individual questions.\n"
         "• The app currently supports Armenian, English, and Russian. Arabic and Farsi are planned.\n\n"
