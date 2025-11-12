@@ -94,11 +94,9 @@ async def handle_feedback_request(callback: types.CallbackQuery) -> None:
     await callback.answer()
 
 
-@router.message(F.text)
+@router.message(F.text, ~F.text.startswith("/"))
 async def handle_feedback_message(message: types.Message) -> None:
     """Collect feedback messages when the user is in feedback mode."""
-    if message.text and message.entities and message.entities[0].type == "bot_command":
-        return
     user_id = message.from_user.id
     lang = feedback_waiting.get(user_id)
     if not lang:
