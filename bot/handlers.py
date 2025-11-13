@@ -1,4 +1,4 @@
-"""Aiogram message handlers for AM Driving Test bot."""
+"""Aiogram message handlers for AM Driving Exams bot."""
 from __future__ import annotations
 
 import logging

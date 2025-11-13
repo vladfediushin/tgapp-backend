@@ -1,10 +1,10 @@
 MESSAGES = {
     "start_prompt": "Choose an option:",
-    "button_open_app": "Open AM Driving Test",
+    "button_open_app": "Open AM Driving Exams",
     "button_about": "About the app",
     "button_feedback": "Feedback / report an issue",
     "about_text": (
-        "This bot is the entry point to AM Driving Test, a Telegram mini app for preparing for "
+        "This bot is the entry point to AM Driving Exams, a Telegram mini app for preparing for "
         "Armenia’s driving theory exams.\n\n"
         "<b>How it works</b>\n"
         "The app is based on the spaced repetition method, specifically the system designed by "

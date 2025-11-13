@@ -138,7 +138,7 @@ async def set_menu_button(admin_token: str):
         raise HTTPException(status_code=403, detail="Forbidden")
     bot, _ = _get_bot_state()
     button = MenuButtonWebApp(
-        text="AM Driving Test",
+        text="AM Driving Exams",
         web_app=WebAppInfo(url="https://www.drivingtest.space/")
     )
     ok = await bot.set_chat_menu_button(menu_button=button)
