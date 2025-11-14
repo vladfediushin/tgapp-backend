@@ -49,5 +49,5 @@ MESSAGES = {
     "admin_feedback": "\U0001F4E9 Feedback from {profile}\nID: {user_id}\n\n{message}",
     "command_about": "About the app",
     "command_feedback": "Send feedback",
-    "reminder_text": "Hi! Today's plan is {goal} questions. You've completed {done}. Keep pushing!"
+    "reminder_text": "Hi! Today's plan is <b>{goal}</b> questions. You've completed <b>{done}</b>. Keep pushing!\n\nThis message is automatic—you can disable reminders in Settings."
 }
