@@ -60,6 +60,12 @@ class User(Base):
     ui_language = Column(Text)
     exam_date = Column(Date, nullable=True)  # FIXED: Made nullable for optional feature
     daily_goal = Column(Integer, nullable=True)  # FIXED: Made nullable for optional feature
+    remind_morning = Column(Boolean, nullable=False, default=False)
+    remind_day = Column(Boolean, nullable=False, default=False)
+    remind_evening = Column(Boolean, nullable=False, default=False)
+    last_morning_reminder = Column(Date, nullable=True)
+    last_day_reminder = Column(Date, nullable=True)
+    last_evening_reminder = Column(Date, nullable=True)
     
     user_progress = relationship(
         "UserProgress",

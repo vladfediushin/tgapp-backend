@@ -2,22 +2,34 @@
 import logging
 import os
 import time
-from fastapi import Body, FastAPI, HTTPException, Request
+from datetime import date
+from fastapi import Body, FastAPI, HTTPException, Request, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from aiogram.types import BotCommand, MenuButtonWebApp, Update, WebAppInfo
+from sqlalchemy import select, or_
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.wiring import get_bot_and_dispatcher
-from bot.locales import TRANSLATIONS
+from bot.locales import get_message
 from app.routers import users_router, questions_router, user_progress_router, topics_router
 from app.api.health import router as health_router
 from .tg_security import check_init_data, extract_user
+from app.database import get_db
+from app.models import User
+from app.crud import user as crud_user
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("api")
 
 app = FastAPI(docs_url="/docs", redoc_url="/redoc")
+
+REMINDER_SLOTS = {
+    "morning": ("remind_morning", "last_morning_reminder"),
+    "day": ("remind_day", "last_day_reminder"),
+    "evening": ("remind_evening", "last_evening_reminder"),
+}
 
 # CORS
 origins = [
@@ -143,6 +155,66 @@ async def set_menu_button(admin_token: str):
     )
     ok = await bot.set_chat_menu_button(menu_button=button)
     return {"ok": ok}
+
+
+@app.post("/cron/send-reminders")
+async def cron_send_reminders(
+    slot: str = Query(..., regex="^(morning|day|evening)$"),
+    token: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send study reminders for a specific time slot (protected by token)."""
+    expected_token = os.environ.get("REMINDER_CRON_TOKEN")
+    if not expected_token or token != expected_token:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    slot = slot.lower()
+    if slot not in REMINDER_SLOTS:
+        raise HTTPException(status_code=400, detail="Invalid slot")
+
+    remind_field, last_field = REMINDER_SLOTS[slot]
+    today = date.today()
+
+    stmt = (
+        select(User)
+        .where(getattr(User, remind_field).is_(True))
+        .where(
+            or_(
+                getattr(User, last_field).is_(None),
+                getattr(User, last_field) < today,
+            )
+        )
+    )
+    result = await db.execute(stmt)
+    users = result.scalars().unique().all()
+
+    if not users:
+        return {"ok": True, "sent": 0}
+
+    bot, _ = _get_bot_state()
+    sent = 0
+
+    for user in users:
+        progress = await crud_user.get_daily_progress(db, user.id, today)
+        daily_goal = progress.get("daily_goal") or user.daily_goal or 0
+        mastered = progress.get("questions_mastered_today", 0)
+
+        if not daily_goal or mastered >= daily_goal:
+            continue
+
+        lang = (user.ui_language or user.exam_language or "en")[:2]
+        text = get_message(lang, "reminder_text", goal=daily_goal, done=mastered)
+        try:
+            await bot.send_message(user.telegram_id, text)
+            setattr(user, last_field, today)
+            sent += 1
+        except Exception as exc:
+            logger.warning("Failed to send reminder to %s: %s", user.telegram_id, exc)
+
+    if sent:
+        await db.commit()
+
+    return {"ok": True, "sent": sent}
 
 
 @app.post("/auth/telegram")

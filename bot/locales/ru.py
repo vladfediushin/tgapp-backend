@@ -41,5 +41,6 @@ MESSAGES = {
     "feedback_thanks": "Спасибо, сообщение доставлено.",
     "admin_feedback": "\U0001F4E9 Сообщение от {profile}\nID: {user_id}\n\n{message}",
     "command_about": "О приложении",
-    "command_feedback": "Оставить отзыв"
+    "command_feedback": "Оставить отзыв",
+    "reminder_text": "Привет! По плану сегодня надо повторить {goal} вопросов. Сейчас повторено {done}. Поднажми!"
 }

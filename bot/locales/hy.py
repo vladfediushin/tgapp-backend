@@ -28,5 +28,6 @@ MESSAGES = {
     "feedback_thanks": "Շնորհակալություն, ձեր արձագանքը փոխանցվեց։",
     "admin_feedback": "\U0001F4E9 Արձագանք {profile}-ից\nID: {user_id}\n\n{message}",
     "command_about": "Հավելվածի մասին",
-    "command_feedback": "Կարծիք ուղարկել"
+    "command_feedback": "Կարծիք ուղարկել",
+    "reminder_text": "Բարև՛։ Այսօր պլանում է կրկնել {goal} հարց։ Այժմ կրկնվել է {done}։ Շարունակի՛ր։"
 }

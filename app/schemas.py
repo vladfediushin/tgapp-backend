@@ -73,6 +73,9 @@ class UserCreate(BaseModel):
     ui_language: constr(min_length=2, max_length=2)  # Fixed typo from ui_langugage
     exam_date: Optional[date] = None  # Made optional
     daily_goal: Optional[int] = None  # Made optional
+    remind_morning: Optional[bool] = None
+    remind_day: Optional[bool] = None
+    remind_evening: Optional[bool] = None
 
 # Fixed UserSettingsUpdate - made exam_date and daily_goal optional
 class UserSettingsUpdate(BaseModel):
@@ -81,6 +84,9 @@ class UserSettingsUpdate(BaseModel):
     ui_language: Optional[constr(min_length=2, max_length=2)] = None
     exam_date: Optional[date] = None  
     daily_goal: Optional[int] = None 
+    remind_morning: Optional[bool] = None
+    remind_day: Optional[bool] = None
+    remind_evening: Optional[bool] = None
 
 class UserOut(BaseModel):
     id: UUID
@@ -93,6 +99,9 @@ class UserOut(BaseModel):
     ui_language: Optional[str] = None  # Made optional for backward compatibility
     exam_date: Optional[date] = None
     daily_goal: Optional[int] = None
+    remind_morning: bool = False
+    remind_day: bool = False
+    remind_evening: bool = False
 
     class Config:
         from_attributes = True

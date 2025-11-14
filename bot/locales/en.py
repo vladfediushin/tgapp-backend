@@ -48,5 +48,6 @@ MESSAGES = {
     "feedback_thanks": "Thanks, your feedback was delivered.",
     "admin_feedback": "\U0001F4E9 Feedback from {profile}\nID: {user_id}\n\n{message}",
     "command_about": "About the app",
-    "command_feedback": "Send feedback"
+    "command_feedback": "Send feedback",
+    "reminder_text": "Hi! Today's plan is {goal} questions. You've completed {done}. Keep pushing!"
 }
