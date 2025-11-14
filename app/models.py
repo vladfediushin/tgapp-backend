@@ -66,6 +66,9 @@ class User(Base):
     last_morning_reminder = Column(Date, nullable=True)
     last_day_reminder = Column(Date, nullable=True)
     last_evening_reminder = Column(Date, nullable=True)
+    is_bot_blocked = Column(Boolean, nullable=False, default=False)
+    last_bot_message_at = Column(DateTime(timezone=True), nullable=True)
+    last_bot_interaction_at = Column(DateTime(timezone=True), nullable=True)
     
     user_progress = relationship(
         "UserProgress",

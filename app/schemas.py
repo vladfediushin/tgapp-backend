@@ -102,6 +102,9 @@ class UserOut(BaseModel):
     remind_morning: bool = False
     remind_day: bool = False
     remind_evening: bool = False
+    is_bot_blocked: bool = False
+    last_bot_message_at: Optional[datetime] = None
+    last_bot_interaction_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -131,3 +134,18 @@ class DailyProgressOut(BaseModel):
                 "date": "2025-07-09"
             }
         }
+
+
+class MessageUserRequest(BaseModel):
+    user_id: Optional[UUID] = None
+    telegram_id: Optional[int] = None
+    message: str
+
+
+class BroadcastRequest(BaseModel):
+    message: str
+    language: Optional[str] = None
+    country: Optional[str] = None
+    include_blocked: bool = False
+    limit: Optional[int] = None
+    user_ids: Optional[List[UUID]] = None

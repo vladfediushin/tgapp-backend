@@ -2,11 +2,12 @@
 import logging
 import os
 import time
-from datetime import date
+from datetime import date, datetime
 from fastapi import Body, FastAPI, HTTPException, Request, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from aiogram.types import BotCommand, MenuButtonWebApp, Update, WebAppInfo
+from aiogram.exceptions import TelegramForbiddenError
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +19,7 @@ from .tg_security import check_init_data, extract_user
 from app.database import get_db
 from app.models import User
 from app.crud import user as crud_user
+from app.schemas import MessageUserRequest, BroadcastRequest
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +32,25 @@ REMINDER_SLOTS = {
     "day": ("remind_day", "last_day_reminder"),
     "evening": ("remind_evening", "last_evening_reminder"),
 }
+
+def _require_admin_token(token: str) -> None:
+    expected = os.environ.get("ADMIN_BROADCAST_TOKEN")
+    if not expected or token != expected:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+
+async def _send_bot_message(bot, user: User, text: str) -> bool:
+    try:
+        await bot.send_message(user.telegram_id, text)
+        user.is_bot_blocked = False
+        user.last_bot_message_at = datetime.utcnow()
+        return True
+    except TelegramForbiddenError:
+        user.is_bot_blocked = True
+        return False
+    except Exception as exc:
+        logger.warning("Failed to send message to %s: %s", user.telegram_id, exc)
+        return False
 
 # CORS
 origins = [
@@ -193,6 +214,8 @@ async def cron_send_reminders(
 
     bot, _ = _get_bot_state()
     sent = 0
+    blocked = 0
+    any_updates = False
 
     for user in users:
         progress = await crud_user.get_daily_progress(db, user.id, today)
@@ -204,17 +227,18 @@ async def cron_send_reminders(
 
         lang = (user.ui_language or user.exam_language or "en")[:2]
         text = get_message(lang, "reminder_text", goal=daily_goal, done=mastered)
-        try:
-            await bot.send_message(user.telegram_id, text)
+        delivered = await _send_bot_message(bot, user, text)
+        any_updates = True
+        if delivered:
             setattr(user, last_field, today)
             sent += 1
-        except Exception as exc:
-            logger.warning("Failed to send reminder to %s: %s", user.telegram_id, exc)
+        else:
+            blocked += 1
 
-    if sent:
+    if any_updates:
         await db.commit()
 
-    return {"ok": True, "sent": sent}
+    return {"ok": True, "sent": sent, "blocked": blocked, "total": len(users)}
 
 
 @app.post("/auth/telegram")
@@ -228,3 +252,80 @@ async def auth_telegram(payload: dict = Body(...)):
         raise HTTPException(status_code=401, detail="Invalid Telegram initData")
     user = extract_user(init_data)
     return {"ok": True, "user": user}
+
+
+@app.post("/admin/message-user")
+async def admin_message_user(
+    payload: MessageUserRequest,
+    token: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a manual message to a single user (protected)."""
+    _require_admin_token(token)
+
+    user = None
+    if payload.user_id:
+        user = await crud_user.get_user_by_id(db, payload.user_id)
+    elif payload.telegram_id:
+        result = await db.execute(select(User).where(User.telegram_id == payload.telegram_id))
+        user = result.scalars().first()
+    else:
+        raise HTTPException(status_code=400, detail="user_id or telegram_id required")
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    bot, _ = _get_bot_state()
+    delivered = await _send_bot_message(bot, user, payload.message)
+    await db.commit()
+    return {"ok": delivered}
+
+
+@app.post("/admin/broadcast")
+async def admin_broadcast(
+    payload: BroadcastRequest,
+    token: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a broadcast message to many users."""
+    _require_admin_token(token)
+
+    stmt = select(User)
+    if payload.language:
+        stmt = stmt.where(
+            or_(User.ui_language == payload.language, User.exam_language == payload.language)
+        )
+    if payload.country:
+        stmt = stmt.where(User.exam_country == payload.country)
+    if payload.user_ids:
+        stmt = stmt.where(User.id.in_(payload.user_ids))
+    if not payload.include_blocked:
+        stmt = stmt.where(User.is_bot_blocked.is_(False))
+    if payload.limit:
+        stmt = stmt.limit(payload.limit)
+
+    result = await db.execute(stmt.order_by(User.created_at.asc()))
+    users = result.scalars().unique().all()
+    if not users:
+        return {"ok": True, "sent": 0, "total": 0}
+
+    bot, _ = _get_bot_state()
+    sent = blocked = failed = 0
+
+    for user in users:
+        delivered = await _send_bot_message(bot, user, payload.message)
+        if delivered:
+            sent += 1
+        elif user.is_bot_blocked:
+            blocked += 1
+        else:
+            failed += 1
+
+    await db.commit()
+    return {
+        "ok": True,
+        "sent": sent,
+        "blocked": blocked,
+        "failed": failed,
+        "total": len(users),
+    }

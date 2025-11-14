@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Dict
 
 from aiogram import Router, F, types
@@ -30,6 +31,9 @@ async def resolve_locale(user: types.User | None) -> str:
                 db_user = result.scalars().first()
                 if db_user:
                     lang = db_user.ui_language or db_user.exam_language
+                    db_user.is_bot_blocked = False
+                    db_user.last_bot_interaction_at = datetime.utcnow()
+                    await session.commit()
         except Exception as exc:
             logging.getLogger(__name__).warning("Failed to load user locale: %s", exc)
 
@@ -97,6 +101,7 @@ async def handle_feedback_request(callback: types.CallbackQuery) -> None:
 @router.message(F.text, ~F.text.startswith("/"))
 async def handle_feedback_message(message: types.Message) -> None:
     """Collect feedback messages when the user is in feedback mode."""
+    await _mark_user_interaction(message.from_user.id)
     user_id = message.from_user.id
     lang = feedback_waiting.get(user_id)
     if not lang:
@@ -117,13 +122,28 @@ async def handle_feedback_message(message: types.Message) -> None:
 
 @router.message(Command("about"))
 async def command_about(message: types.Message) -> None:
+    await _mark_user_interaction(message.from_user.id)
     lang = await resolve_locale(message.from_user)
     await message.answer(get_message(lang, "about_text"))
 
 
 @router.message(Command("feedback"))
 async def command_feedback(message: types.Message) -> None:
+    await _mark_user_interaction(message.from_user.id)
     user_id = message.from_user.id
     lang = await resolve_locale(message.from_user)
     feedback_waiting[user_id] = lang
     await message.answer(get_message(lang, "feedback_prompt"))
+
+
+async def _mark_user_interaction(telegram_id: int) -> None:
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(User).where(User.telegram_id == telegram_id))
+            db_user = result.scalars().first()
+            if db_user:
+                db_user.is_bot_blocked = False
+                db_user.last_bot_interaction_at = datetime.utcnow()
+                await session.commit()
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Failed to mark interaction: %s", exc)
